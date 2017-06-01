@@ -24,6 +24,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 #import "strings.odin";
+#import "math.odin";
 #import "fmt.odin";
 #import "os.odin";
 
@@ -68,6 +69,8 @@ main :: proc() {
     defer glfw.Terminate();
     fmt.fprintln(os.stderr, "Succeeded initializing GLFW");
 
+
+    glfw.WindowHint(glfw.SAMPLES, 4);    // samples, for antialiasing
 
     title := "Rift minimal example (Odin)\x00";
     resx, resy : i32 = 1600, 900;
@@ -323,8 +326,10 @@ main :: proc() {
     gl.BindBuffer(gl.ARRAY_BUFFER, vbo_controller_uv);
     gl.BufferData(gl.ARRAY_BUFFER, size_of_val(uv_data_controller), &uv_data_controller[0], gl.STATIC_DRAW);
 
-    gl.EnableVertexAttribArray(1);
-    gl.VertexAttribPointer(1, 2, gl.FLOAT, gl.FALSE, 0, nil);
+    gl.EnableVertexAttribArray(2);
+    gl.VertexAttribPointer(2, 2, gl.FLOAT, gl.FALSE, 0, nil);
+
+    // gl.DisableVertexAttribArray(1);
 
     defer {
         gl.DeleteBuffers(1, &vbo_controller_uv);
@@ -385,37 +390,115 @@ main :: proc() {
     gl.GenVertexArrays(1, &vao_room);
     gl.BindVertexArray(vao_room);
 
-    half_side: f32 = 10.0;
+    half_side: f32 = 30.0;
     floor_height: f32 = -2.0; // @TODO: use actual floor/sitting height instead of 2 meters..
     roof_height: f32 = 3.0;
     
-    num_vertices_room: i32 = 12;
-    pos_data_room := [..]f32 {
-        -half_side, floor_height, -half_side,
-         half_side, floor_height, -half_side,
-        -half_side, floor_height,  half_side,
-        -half_side, floor_height,  half_side,
-         half_side, floor_height, -half_side,
-         half_side, floor_height,  half_side,
-
-        -half_side, roof_height, -half_side, 
-         half_side, roof_height, -half_side, 
-        -half_side, roof_height,  half_side, 
-        -half_side, roof_height,  half_side, 
-         half_side, roof_height, -half_side, 
-         half_side, roof_height,  half_side, 
+    vec2 :: struct {
+        x, y: f32,
     };
+
+    vec3 :: struct {
+        x, y, z: f32,
+    };
+
+    cubeVertices:= [8*3]vec3 {
+        vec3{-half_side,  roof_height,  -half_side},
+        vec3{ half_side,  roof_height,  -half_side},
+        vec3{-half_side,  roof_height,   half_side},
+        vec3{ half_side,  roof_height,   half_side},
+        vec3{-half_side,  floor_height, -half_side},
+        vec3{ half_side,  floor_height, -half_side},
+        vec3{-half_side,  floor_height,  half_side},
+        vec3{ half_side,  floor_height,  half_side},
+    };
+
+    cubeIndices := [14]i32 {
+        0, 1, 2, 3, 7, 1, 5, 4, 7, 6, 2, 4, 0, 1
+    };
+
+
+
+    dot :: proc(a, b: vec3) -> f32 { return a.x*b.x + a.y*b.y + a.z*b.z; };
+
+    norm :: proc(v: vec3) -> vec3 {
+        mag := math.sqrt(dot(v,v));
+        return vec3{v.x/mag, v.y/mag, v.z/mag};
+    }
+
+    cross :: proc(a, b: vec3) -> vec3 { 
+        return vec3{a.y*b.z - a.z*b.y, 
+                    a.z*b.x - a.x*b.z, 
+                    a.x*b.y - a.y*b.x};
+    };
+
+    normal_triangle :: proc(a, b, c: vec3) -> vec3 {
+        v1 := vec3{b.x - a.x, b.y - a.y, b.z - a.z};
+        v2 := vec3{c.x - a.x, c.y - a.y, c.z - a.z};
+        return norm(cross(v1, v2));
+    }
+
+    num_indices_room :: 14;
+    num_triangles_room :: num_indices_room - 2; // since it is a triangle strip of N indices, there are N-2 triangles
+    num_vertices_room :: 3*num_triangles_room; // needed by glDrawArrays
+
+    pos_data_room:    [num_vertices_room]vec3;
+    normal_data_room: [num_vertices_room]vec3;
+    uv_data_room:     [num_vertices_room]vec2;
+
+    for i in 0..<num_triangles_room {
+
+        pos_data_room[3*i+0] = cubeVertices[cubeIndices[i + 0 + (i % 2)]];;
+        pos_data_room[3*i+1] = cubeVertices[cubeIndices[i + 1 - (i % 2)]];;
+        pos_data_room[3*i+2] = cubeVertices[cubeIndices[i + 2]];;
+
+        // vertices are in clockwise winding order, so the (outward) normal is just the normalized cross product
+        normal := normal_triangle(pos_data_room[3*i+0], pos_data_room[3*i+1], pos_data_room[3*i+2]);
+        normal_data_room[3*i+0] = normal;
+        normal_data_room[3*i+1] = normal;
+        normal_data_room[3*i+2] = normal; 
+
+        if abs(normal.x) > 0.5 {
+            uv_data_room[3*i+0] = vec2{pos_data_room[3*i+0].y, pos_data_room[3*i+0].z};
+            uv_data_room[3*i+1] = vec2{pos_data_room[3*i+1].y, pos_data_room[3*i+1].z};
+            uv_data_room[3*i+2] = vec2{pos_data_room[3*i+2].y, pos_data_room[3*i+2].z};
+        } else if abs(normal.y) > 0.5 {
+            uv_data_room[3*i+0] = vec2{pos_data_room[3*i+0].x, pos_data_room[3*i+0].z};
+            uv_data_room[3*i+1] = vec2{pos_data_room[3*i+1].x, pos_data_room[3*i+1].z};
+            uv_data_room[3*i+2] = vec2{pos_data_room[3*i+2].x, pos_data_room[3*i+2].z};
+        } else if abs(normal.z) > 0.5 {
+            uv_data_room[3*i+0] = vec2{pos_data_room[3*i+0].x, pos_data_room[3*i+0].y};
+            uv_data_room[3*i+1] = vec2{pos_data_room[3*i+1].x, pos_data_room[3*i+1].y};
+            uv_data_room[3*i+2] = vec2{pos_data_room[3*i+2].x, pos_data_room[3*i+2].y};
+        }
+    }
+
+
 
     vbo_room: u32;
     gl.GenBuffers(1, &vbo_room);
     gl.BindBuffer(gl.ARRAY_BUFFER, vbo_room);
     gl.BufferData(gl.ARRAY_BUFFER, size_of_val(pos_data_room), &pos_data_room[0], gl.STATIC_DRAW);
-
+   
     gl.EnableVertexAttribArray(0);
     gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 0, nil);
     
+    vbo_normal_room: u32;
+    gl.GenBuffers(1, &vbo_normal_room);
+    gl.BindBuffer(gl.ARRAY_BUFFER, vbo_normal_room);
+    gl.BufferData(gl.ARRAY_BUFFER, size_of_val(normal_data_room), &normal_data_room[0], gl.STATIC_DRAW);
+
     gl.EnableVertexAttribArray(1);
-    gl.VertexAttribPointer(1, 2, gl.FLOAT, gl.FALSE, 0, nil);
+    gl.VertexAttribPointer(1, 3, gl.FLOAT, gl.FALSE, 0, nil);
+
+    vbo_uv_room: u32;
+    gl.GenBuffers(1, &vbo_uv_room);
+    gl.BindBuffer(gl.ARRAY_BUFFER, vbo_uv_room);
+    gl.BufferData(gl.ARRAY_BUFFER, size_of_val(uv_data_room), &uv_data_room[0], gl.STATIC_DRAW);
+
+    gl.EnableVertexAttribArray(2);
+    gl.VertexAttribPointer(2, 2, gl.FLOAT, gl.FALSE, 0, nil);
+
 
     defer {
         gl.DeleteBuffers(1, &vbo_room);
@@ -433,6 +516,8 @@ main :: proc() {
     for glfw.WindowShouldClose(window) == 0 {
         glfw.PollEvents();
 
+        calculate_frame_timings(window);
+
         // Get the predicted head pose for the current frame
         ovr_GetEyePoses(session, frame_index, ovrTrue, &hmd_to_eye_offset[0], &layer.RenderPose[0], &layer.SensorSampleTime);
 
@@ -449,7 +534,34 @@ main :: proc() {
         
         // Upload uniforms that are the same per-eye
         gl.Uniform1f(gl.get_uniform_location(program, "time\x00"), f32(glfw.GetTime()));
-        
+
+        AA : i32 = 4;
+        if glfw.GetKey(window, glfw.KEY_1) == glfw.PRESS {
+            AA = 1;
+        }
+        if glfw.GetKey(window, glfw.KEY_2) == glfw.PRESS {
+            AA = 2;
+        }
+        if glfw.GetKey(window, glfw.KEY_3) == glfw.PRESS {
+            AA = 3;
+        }
+        if glfw.GetKey(window, glfw.KEY_4) == glfw.PRESS {
+            AA = 4;
+        }
+        if glfw.GetKey(window, glfw.KEY_5) == glfw.PRESS {
+            AA = 5;
+        }
+        if glfw.GetKey(window, glfw.KEY_6) == glfw.PRESS {
+            AA = 6;
+        }
+        if glfw.GetKey(window, glfw.KEY_7) == glfw.PRESS {
+            AA = 7;
+        }
+        if glfw.GetKey(window, glfw.KEY_8) == glfw.PRESS {
+            AA = 8;
+        }
+        gl.Uniform1i(gl.get_uniform_location(program, "AA\x00"), AA);
+
         // We need to render the scene twice, once for each eye.
         for eye in 0..1 {
             // Grab the current available color buffer texture from the texture swap chain.
@@ -554,4 +666,46 @@ print_last_rift_error :: proc() {
 
 error_callback :: proc(error: i32, desc: ^byte) #cc_c {
     fmt.printf("Error code %d:\n    %s\n", error, strings.to_odin_string(desc));
+}
+
+
+// globals for timings
+t1 := 0.0;
+avg_dt := 0.0;
+avg_dt2 := 0.0;
+num_samples := 60;
+counter := 0;
+last_frame_time := 1.0/60.0;
+calculate_frame_timings :: proc(window: ^glfw.window) {
+    t2 := glfw.GetTime();
+    dt := t2-t1;
+    t1 = t2;
+
+    avg_dt += dt;
+    avg_dt2 += dt*dt;
+    counter++;
+
+    last_frame_time = dt;
+
+    if counter == num_samples {
+        avg_dt  /= f64(num_samples);
+        avg_dt2 /= f64(num_samples);
+        std_dt := math.sqrt(avg_dt2 - avg_dt*avg_dt);
+        ste_dt := std_dt/math.sqrt(f64(num_samples));
+
+        // avg: frame time average over num_samples frames
+        // std: standard deviation calculated over those frames
+        // ste: standard error (standard deviation of the average) calculated over those frames
+        
+        title := fmt.aprintf("dt: avg = %.3fms, std = %.3fms, ste = %.4fms. fps = %.1f\x00", 1000.0*avg_dt, 1000.0*std_dt, 1000.0*ste_dt, 1.0/avg_dt);
+        defer free(title);
+
+        glfw.SetWindowTitle(window, &title[0]);
+        
+        num_samples = int(1.0/avg_dt);
+        
+        avg_dt = 0.0;
+        avg_dt2 = 0.0;
+        counter = 0;
+    }
 }

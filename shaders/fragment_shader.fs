@@ -2,41 +2,47 @@
 
 in vec2 uv;
 in vec3 pos;
+in vec3 normal; 
 
 uniform int apply_texture;
 uniform sampler2D texture_sampler;
 
+uniform int AA;
+
 out vec4 color;
+
+float inside_grid(vec2 p, float m, float t) {
+    p = fract(m*p + 0.5) - 0.5;
+
+    if (min(abs(p.x), abs(p.y)) < t) {
+        return 1.0;
+    } else {
+        return 0.0;
+    }
+}
 
 void main()
 {
     if (apply_texture == 1) {
         color = vec4(texture(texture_sampler, uv).rgb, 1.0);
     } else {
-        color = vec4(0.3, 0.4, 0.5, 1.0);
+        vec2 dpdx = dFdx(uv);
+        vec2 dpdy = dFdy(uv);
 
-        vec3 uv2 = fract(4*1.000*pos + 0.5) - 0.5; // add and subtract half a unit to get centered lines 
-        vec3 uv3 = fract(4*0.125*pos + 0.5) - 0.5;
+        // WARNING: Terrible anti-aliasing!
+        float dx = 1.0/AA;
+        float dy = 1.0/AA;
+        float c = 0.0;
+        for (int j = 0; j < AA; j++) {
+            for (int i = 0; i < AA; i++) {
+                vec2 p = uv + (-0.5 + (i + 0.5)*dx)*dpdx + (-0.5 + (j + 0.5)*dy)*dpdy;
+                c += (1.0 - inside_grid(p, 1.0, 0.005));
+            }
+        }
+        c /= AA*AA;
 
-        // base thickness, does not scale properly with desolution
-        float t = 0.005;
-        
-        // thickness thin line
-        float d2 = 1.0*t;
-        
-        // thickness thick line
-        float d3 = 4.0*t/8.0;
-
-        // falloff after 1.0 thickness, does not scale with resolution
-        float s2 = smoothstep(d2*1.0, d2*2.5, min(abs(uv2.x), abs(uv2.z)));
-        float s3 = smoothstep(d3*1.0, d3*1.25, min(abs(uv3.x), abs(uv3.z)));
-        
-        // coloring
-        vec4 bgColor = vec4(0.95*155/255.0, 0.95*156/255.0, 0.95*159/255.0, 1.0);
-        vec4 fgColor = vec4(0.95*78/255.0, 0.95*81/255.0, 0.95*88/255.0, 1.0);
-        //vec4 fgColor = vec4(0.00, 0.00, 0.00, 1.0);
-        
-        color  = bgColor*s2 + fgColor*(1.0 - s2);
-        color *= bgColor*s3 + fgColor*(1.0 - s3);
+        vec3 bgColor = 0.5 + 0.5*normal;
+        vec3 fgColor = vec3(0.0, 0.0, 0.0);
+        color = vec4(vec3(bgColor*c + fgColor*(1.0 - c)), 1.0);
     }
 }

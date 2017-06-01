@@ -18,6 +18,7 @@ UnmapBuffer:              proc(target: i32) #cc_c;
 
 VertexAttribPointer:      proc(index: u32, size, type_: i32, normalized: i32, stride: u32, pointer: rawptr) #cc_c;
 EnableVertexAttribArray:  proc(index: u32) #cc_c;
+DisableVertexAttribArray:  proc(index: u32) #cc_c;
 
 CreateShader:             proc(shader_type: i32) -> u32 #cc_c;
 ShaderSource:             proc(shader: u32, count: u32, str: ^^byte, length: ^i32) #cc_c;
@@ -93,7 +94,11 @@ DeleteBuffers:            proc(n: i32, buffers: ^u32) #cc_c;
 DeleteFramebuffers:       proc(n: i32, framebuffers: ^u32) #cc_c;
 DeleteTextures:           proc(n: i32, textures: ^u32) #cc_c;
 
+Hint:                     proc(target, mode: u32) #cc_c;
+
 init :: proc(set_proc_address: proc(p: rawptr, name: string)) {
+	set_proc_address(&Hint,                    "glHint\x00");
+
 	set_proc_address(&DeleteVertexArrays,      "glDeleteVertexArrays\x00");
 	set_proc_address(&DeleteBuffers,           "glDeleteBuffers\x00");
 	set_proc_address(&DeleteFramebuffers,      "glDeleteFramebuffers\x00");
@@ -133,6 +138,7 @@ init :: proc(set_proc_address: proc(p: rawptr, name: string)) {
 
 	set_proc_address(&VertexAttribPointer,     "glVertexAttribPointer\x00");
 	set_proc_address(&EnableVertexAttribArray, "glEnableVertexAttribArray\x00");
+	set_proc_address(&DisableVertexAttribArray,"glDisableVertexAttribArray\x00");
 
 	set_proc_address(&CreateShader,            "glCreateShader\x00");
 	set_proc_address(&ShaderSource,            "glShaderSource\x00");
