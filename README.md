@@ -22,7 +22,7 @@ Note: Requires the Rift SDK header files.
 
 Dependencies: 
  - GLFW. Bundled, both .dll and import .lib, and header files (for C code), version 3.2.1
- - Rift SDK. Bundled .lib file, version 1.13.
+ - Rift SDK. Bundled .lib file, version 1.13. Oculus Runtime needs to be in PATH. 
 
 
  Recommended reading: https://developer.oculus.com/documentation/pcsdk/latest/concepts/book-dg/
