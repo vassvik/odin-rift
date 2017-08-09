@@ -71,6 +71,20 @@ draw_model :: proc(program: u32, vao: u32, texture: u32, num_vertices: u32, d, p
     gl.DrawArrays(gl.TRIANGLES, 0, i32(num_vertices));
 }
 
+draw_model2 :: proc(program: u32, vao: u32, texture: u32, num_elements: u32, d, p: rift.ovrVector3f, q: rift.ovrQuatf) {
+    gl.UseProgram(program);
+    gl.BindVertexArray(vao);
+
+    gl.BindTexture(gl.TEXTURE_2D, texture);
+    gl.Uniform1i(get_uniform_location(program, "apply_texture\x00"), texture != 0 ? 1 : 0);
+    
+    gl.Uniform3f(get_uniform_location(program, "d_model\x00"), d.x, d.y, d.z);
+    gl.Uniform3f(get_uniform_location(program, "p_model\x00"), p.x, p.y, p.z);
+    gl.Uniform4f(get_uniform_location(program, "q_model\x00"), q.x, q.y, q.z, q.w);
+
+    gl.DrawElements(gl.TRIANGLES, i32(num_elements), gl.UNSIGNED_INT, nil);
+}
+
 main :: proc() {
     using rift;
 
@@ -306,62 +320,56 @@ main :: proc() {
     defer gl.DeleteProgram(program);
 
 
-    //model_left, status := utils.read_obj("Oculus_Left.obj");
+    model_left, status_left := utils.read_obj("Oculus_Left.obj");
+    model_right, status_right := utils.read_obj("Oculus_Right.obj");
     //if true do return;
     
-    fmt.println("asdasdasd");
-    //v2, n2, u2 := utils.read_obj("oculus_cv1_controller_right.obj");
-
     //num_vertices_controllers: [2]u32 = [2]u32{u32(len(v1)), u32(len(v2))};
 
-    // Setup "controller" vao, vbo and vertex attribs, and upload
-    vao_controllers: [2]u32;
-    gl.GenVertexArrays(2, &vao_controllers[0]);
+    load_model :: proc(using model: utils.Model) -> (vao: u32, vbos: [3]u32, ebo: u32) {
+        vao: u32;
+        gl.GenVertexArrays(1, &vao);
+        gl.BindVertexArray(vao);
 
-    vbo_controller_pos: [2]u32;
-    gl.GenBuffers(2, &vbo_controller_pos[0]);
-    
-    vbo_controller_uv: [2]u32;
-    gl.GenBuffers(2, &vbo_controller_uv[0]);
+        vbos: [3]u32;
+        gl.GenBuffers(3, &vbos[0]);
 
+        ebo: u32;
+        gl.GenBuffers(1, &ebo);
 
-    
-    gl.BindVertexArray(vao_controllers[0]);
+        gl.BindBuffer(gl.ARRAY_BUFFER, vbos[0]);
+        gl.BufferData(gl.ARRAY_BUFFER, size_of(positions[0])*len(positions), &positions[0], gl.STATIC_DRAW);   
+        gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 0, nil);
+        gl.EnableVertexAttribArray(0);
 
-    gl.BindBuffer(gl.ARRAY_BUFFER, vbo_controller_pos[0]);
-    //gl.BufferData(gl.ARRAY_BUFFER, size_of(v1[0])*len(v1), &v1[0], gl.STATIC_DRAW);
-    
-    gl.EnableVertexAttribArray(0);
-    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 0, nil);
+        gl.BindBuffer(gl.ARRAY_BUFFER, vbos[1]);
+        gl.BufferData(gl.ARRAY_BUFFER, size_of(normals[0])*len(normals), &normals[0], gl.STATIC_DRAW);   
+        gl.VertexAttribPointer(1, 3, gl.FLOAT, gl.FALSE, 0, nil);
+        gl.EnableVertexAttribArray(1);
 
-    gl.BindBuffer(gl.ARRAY_BUFFER, vbo_controller_uv[0]);
-    //gl.BufferData(gl.ARRAY_BUFFER, size_of(u1[0])*len(u1), &u1[0], gl.STATIC_DRAW);
+        gl.BindBuffer(gl.ARRAY_BUFFER, vbos[2]);
+        gl.BufferData(gl.ARRAY_BUFFER, size_of(uvs[0])*len(uvs), &uvs[0], gl.STATIC_DRAW);   
+        gl.VertexAttribPointer(2, 2, gl.FLOAT, gl.FALSE, 0, nil);
+        gl.EnableVertexAttribArray(2);
 
-    gl.EnableVertexAttribArray(2);
-    gl.VertexAttribPointer(2, 2, gl.FLOAT, gl.FALSE, 0, nil);
+        gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo);
+        gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, size_of(indices[0])*len(indices), &indices[0], gl.STATIC_DRAW);
+        
+        fmt.println(size_of(positions[0])*len(positions), size_of(normals[0])*len(normals), size_of(uvs[0])*len(uvs), size_of(indices[0])*len(indices));
 
+        return vao, vbos, ebo;
+    }
 
-    gl.BindVertexArray(vao_controllers[1]);
-
-    gl.BindBuffer(gl.ARRAY_BUFFER, vbo_controller_pos[1]);
-    //gl.BufferData(gl.ARRAY_BUFFER, size_of(v2[0])*len(v2), &v2[0], gl.STATIC_DRAW);
-    
-    gl.EnableVertexAttribArray(0);
-    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 0, nil);
-
-    gl.BindBuffer(gl.ARRAY_BUFFER, vbo_controller_uv[1]);
-    //gl.BufferData(gl.ARRAY_BUFFER, size_of(u2[0])*len(u2), &u2[0], gl.STATIC_DRAW);
-
-    gl.EnableVertexAttribArray(2);
-    gl.VertexAttribPointer(2, 2, gl.FLOAT, gl.FALSE, 0, nil);
-
-
-    // gl.DisableVertexAttribArray(1);
+    vao_left, vbos_left, ebo_left := load_model(model_left);
+    vao_right, vbos_right, ebo_right := load_model(model_right);
 
     defer {
-        gl.DeleteBuffers(2, &vbo_controller_uv[0]);
-        gl.DeleteBuffers(2, &vbo_controller_pos[0]);
-        gl.DeleteVertexArrays(2, &vao_controllers[0]);
+        gl.DeleteVertexArrays(1, &vao_left);
+        gl.DeleteVertexArrays(1, &vao_right);
+        gl.DeleteBuffers(3, &vbos_left[0]);
+        gl.DeleteBuffers(3, &vbos_right[0]);
+        gl.DeleteBuffers(1, &ebo_left);
+        gl.DeleteBuffers(1, &ebo_right);
     }
 
 
@@ -537,7 +545,8 @@ main :: proc() {
     gl.Enable(gl.FRAMEBUFFER_SRGB);
     gl.ClearColor(0.2, 0.3, 0.4, 1.0); 
 
-    controller_offset_x, controller_offset_y, controller_offset_z : f32 = -0.0067174, 0.0017909, -0.0525607;
+    //controller_offset_x, controller_offset_y, controller_offset_z : f32 = -0.0067174, 0.0017909, -0.0525607;
+    controller_offset_x, controller_offset_y, controller_offset_z : f32 = 0.0, 0.0, 0.0;
 
     frame_index: i64 = 0;
     for glfw.WindowShouldClose(window) == 0 {
@@ -560,7 +569,7 @@ main :: proc() {
         p_left := ts.HandPoses[0].ThePose.Position;
         p_right := ts.HandPoses[1].ThePose.Position;
 
-        q_reorient := ovrQuatf{math.sin(math.to_radians(39.4/2)), 0.0, 0.0, math.cos(math.to_radians(39.4/2))};
+        q_reorient := ovrQuatf{0.0, math.sin(math.to_radians(180.0/2)), 0.0, math.cos(math.to_radians(180.0/2))};
         q_left := qmul(ts.HandPoses[0].ThePose.Orientation, q_reorient);
         q_right := qmul(ts.HandPoses[1].ThePose.Orientation, q_reorient);
 
@@ -638,6 +647,18 @@ main :: proc() {
                        ovrVector3f{-controller_offset_x, controller_offset_y, controller_offset_z}, 
                        p_right, q_right);
         */
+            // Left controller
+            draw_model2(program, vao_left, 
+                       texture_controller, cast(u32)len(model_left.indices), 
+                       ovrVector3f{controller_offset_x, controller_offset_y, controller_offset_z}, 
+                       p_left, q_left);
+
+            // Right controller
+            draw_model2(program, vao_right, 
+                       texture_controller, cast(u32)len(model_right.indices), 
+                       ovrVector3f{-controller_offset_x, controller_offset_y, controller_offset_z}, 
+                       p_right, q_right);
+
             // Commit the render
             ovr_CommitTextureSwapChain(session, texture_swap_chains[eye]);
         }
