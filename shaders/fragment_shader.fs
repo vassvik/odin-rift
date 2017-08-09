@@ -19,12 +19,28 @@ float inside_grid(vec2 p, float m, float t) {
     } else {
         return 0.0;
     }
+
+
 }
 
 void main()
 {
     if (apply_texture == 1) {
         color = vec4(texture(texture_sampler, uv).rgb, 1.0);
+        if (abs(pos.x) < 0.002) {
+            color = vec4(1.0, 0.0, 0.0, 1.0);
+        }
+        if (abs(pos.y) < 0.002) {
+            color = vec4(0.0, 1.0, 0.0, 1.0);
+        }
+        if (abs(pos.z) < 0.002) {
+            color = vec4(0.0, 0.0, 1.0, 1.0);
+        }
+
+
+
+
+
     } else {
         vec2 dpdx = dFdx(uv);
         vec2 dpdy = dFdy(uv);
@@ -44,5 +60,7 @@ void main()
         vec3 bgColor = 0.5 + 0.5*normal;
         vec3 fgColor = vec3(0.0, 0.0, 0.0);
         color = vec4(vec3(bgColor*c + fgColor*(1.0 - c)), 1.0);
+
     }
 }
+

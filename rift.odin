@@ -1,5 +1,5 @@
-#import "fmt.odin"; // println, printf
-#foreign_system_library ovr "libovr.lib";
+import "fmt.odin"; // println, printf
+foreign_system_library ovr "libovr.lib";
 
 
 
@@ -194,8 +194,8 @@ ovrErrorType :: enum i32 {
 
 
 ovrErrorInfo :: struct #ordered {
-    Result: ovrResult,
-    ErrorString: [512]i8,
+    Result: ovrResult;
+    ErrorString: [512]i8;
 };
 
 
@@ -224,51 +224,51 @@ ovrFalse   :: 0;          ///< ovrBool value of true.
 
 /// A RGBA color with normalized float components.
 ovrColorf :: struct #ordered #align 4 {
-    r, g, b, a: f32,
+    r, g, b, a: f32;
 };
 
 /// A 2D vector with integer components.
 ovrVector2i :: struct #ordered #align 4 {
-    x, y: i32,
+    x, y: i32;
 };
 
 /// A 2D size with integer components.
 ovrSizei :: struct #ordered #align 4 {
-    w, h: i32,
+    w, h: i32;
 };
 
 /// A 2D rectangle with a position and size.
 /// All components are integers.
 ovrRecti :: struct #ordered #align 4 {
-    Pos: ovrVector2i,
-    Size: ovrSizei,
+    Pos: ovrVector2i;
+    Size: ovrSizei;
 };
 
 /// A quaternion rotation.
 ovrQuatf :: struct #ordered #align 4 {
-    x, y, z, w: f32,
+    x, y, z, w: f32;
 };
 
 /// A 2D vector with float components.
 ovrVector2f :: struct #ordered #align 4 {
-    x, y: f32,
+    x, y: f32;
 };
 
 /// A 3D vector with float components.
 ovrVector3f :: struct #ordered #align 4 {
-    x, y, z: f32,
+    x, y, z: f32;
 };
 
 /// A 4x4 matrix with float elements.
 ovrMatrix4f :: struct #ordered #align 4 {
-    M: [4][4]f32,
+    M: [4][4]f32;
 };
 
 /// Position and orientation together.
 /// The coordinate system used is right-handed Cartesian.
 ovrPosef :: struct #ordered #align 4 {
-    Orientation: ovrQuatf,
-    Position:    ovrVector3f,
+    Orientation: ovrQuatf;
+    Position:    ovrVector3f;
 };
 
 /// A full pose (rigid body) configuration with first and second derivatives.
@@ -277,13 +277,13 @@ ovrPosef :: struct #ordered #align 4 {
 /// It can be the HMD, Touch controller, sensor or something else. The context
 /// depends on the usage of the struct.
 ovrPoseStatef :: struct #ordered #align 8 {
-    ThePose:             ovrPosef,      ///< Position and orientation.
-    AngularVelocity:     ovrVector3f,   ///< Angular velocity in radians per second.
-    LinearVelocity:      ovrVector3f,   ///< Velocity in meters per second.
-    AngularAcceleration: ovrVector3f,   ///< Angular acceleration in radians per second per second.
-    LinearAcceleration:  ovrVector3f,   ///< Acceleration in meters per second per second.
-    pad0:                [4]i8,         ///< \internal struct pad.
-    TimeInSeconds:       f64,           ///< Absolute time that this pose refers to. \see ovr_GetTimeInSeconds
+    ThePose:             ovrPosef;      ///< Position and orientation.
+    AngularVelocity:     ovrVector3f;   ///< Angular velocity in radians per second.
+    LinearVelocity:      ovrVector3f;   ///< Velocity in meters per second.
+    AngularAcceleration: ovrVector3f;   ///< Angular acceleration in radians per second per second.
+    LinearAcceleration:  ovrVector3f;   ///< Acceleration in meters per second per second.
+    pad0:                [4]i8;         ///< \internal struct pad.
+    TimeInSeconds:       f64;           ///< Absolute time that this pose refers to. \see ovr_GetTimeInSeconds
 };
 
 /// Describes the up, down, left, and right angles of the field of view.
@@ -292,10 +292,10 @@ ovrPoseStatef :: struct #ordered #align 8 {
 /// \note For a standard 90 degree vertical FOV, we would
 /// have: { UpTan = tan(90 degrees / 2), DownTan = tan(90 degrees / 2) }.
 ovrFovPort :: struct #ordered #align 4 {
-    UpTan:    f32, ///< The tangent of the angle between the viewing vector and the top edge of the field of view.
-    DownTan:  f32, ///< The tangent of the angle between the viewing vector and the bottom edge of the field of view.
-    LeftTan:  f32, ///< The tangent of the angle between the viewing vector and the left edge of the field of view.
-    RightTan: f32, ///< The tangent of the angle between the viewing vector and the right edge of the field of view.    
+    UpTan:    f32; ///< The tangent of the angle between the viewing vector and the top edge of the field of view.
+    DownTan:  f32; ///< The tangent of the angle between the viewing vector and the bottom edge of the field of view.
+    LeftTan:  f32; ///< The tangent of the angle between the viewing vector and the left edge of the field of view.
+    RightTan: f32; ///< The tangent of the angle between the viewing vector and the right edge of the field of view.    
 };
 
 
@@ -387,29 +387,29 @@ ovrTrackingOrigin :: enum i32 {
 /// For Windows this is a LUID type.
 ovrGraphicsLuid :: struct #ordered #align 8 {
     // Public definition reserves space for graphics API-specific implementation
-    Reserved : [8]i8
+    Reserved : [8]i8;
 };
 
 /// This is a complete descriptor of the HMD.
 ovrHmdDesc :: struct #ordered #align 8 {
-    Type:                  ovrHmdType                            ///< The type of HMD.
-    pad0:                  [4]i8,                                ///< \internal struct paddding.
-    ProductName:           [64]i8,                               ///< UTF8-encoded product identification string (e.g. "Oculus Rift DK1").
-    Manufacturer:          [64]i8,                               ///< UTF8-encoded HMD manufacturer identification string.
-    VendorId:              i16,                                  ///< HID (USB) vendor identifier of the device.
-    ProductId:             i16,                                  ///< HID (USB) product identifier of the device.
-    SerialNumber:          [24]i8,                               ///< HMD serial number.
-    FirmwareMajor:         i16,                                  ///< HMD firmware major version.
-    FirmwareMinor:         i16,                                  ///< HMD firmware minor version.
-    AvailableHmdCaps:      u32,                                  ///< Capability bits described by ovrHmdCaps which the HMD currently supports.
-    DefaultHmdCaps:        u32,                                  ///< Capability bits described by ovrHmdCaps which are default for the current Hmd.
-    AvailableTrackingCaps: u32,                                  ///< Capability bits described by ovrTrackingCaps which the system currently supports.
-    DefaultTrackingCaps:   u32,                                  ///< Capability bits described by ovrTrackingCaps which are default for the current system.
-    DefaultEyeFov:         [ovrEyeType.ovrEye_Count]ovrFovPort,  ///< Defines the recommended FOVs for the HMD.
-    MaxEyeFov:             [ovrEyeType.ovrEye_Count]ovrFovPort,  ///< Defines the maximum FOVs for the HMD.
-    Resolution:            ovrSizei,                             ///< Resolution of the full HMD screen (both eyes) in pixels.
-    DisplayRefreshRate:    f32,                                  ///< Nominal refresh rate of the display in cycles per second at the time of HMD creation.
-    pad1:                  [4]i8,                                ///< \internal struct paddding.
+    Type:                  ovrHmdType;                           ///< The type of HMD.
+    pad0:                  [4]i8;                                ///< \internal struct paddding.
+    ProductName:           [64]i8;                               ///< UTF8-encoded product identification string (e.g. "Oculus Rift DK1").
+    Manufacturer:          [64]i8;                               ///< UTF8-encoded HMD manufacturer identification string.
+    VendorId:              i16;                                  ///< HID (USB) vendor identifier of the device.
+    ProductId:             i16;                                  ///< HID (USB) product identifier of the device.
+    SerialNumber:          [24]i8;                               ///< HMD serial number.
+    FirmwareMajor:         i16;                                  ///< HMD firmware major version.
+    FirmwareMinor:         i16;                                  ///< HMD firmware minor version.
+    AvailableHmdCaps:      u32;                                  ///< Capability bits described by ovrHmdCaps which the HMD currently supports.
+    DefaultHmdCaps:        u32;                                  ///< Capability bits described by ovrHmdCaps which are default for the current Hmd.
+    AvailableTrackingCaps: u32;                                  ///< Capability bits described by ovrTrackingCaps which the system currently supports.
+    DefaultTrackingCaps:   u32;                                  ///< Capability bits described by ovrTrackingCaps which are default for the current system.
+    DefaultEyeFov:         [ovrEyeType.ovrEye_Count]ovrFovPort;  ///< Defines the recommended FOVs for the HMD.
+    MaxEyeFov:             [ovrEyeType.ovrEye_Count]ovrFovPort;  ///< Defines the maximum FOVs for the HMD.
+    Resolution:            ovrSizei;                             ///< Resolution of the full HMD screen (both eyes) in pixels.
+    DisplayRefreshRate:    f32;                                  ///< Nominal refresh rate of the display in cycles per second at the time of HMD creation.
+    pad1:                  [4]i8;                                ///< \internal struct paddding.
 };
 
 
@@ -434,10 +434,10 @@ ovrStatusBits :: enum i32 {
 /// \see ovr_GetTrackerDesc
 ///
 ovrTrackerDesc :: struct #ordered #align 8 {
-    FrustumHFovInRadians: f32,      ///< Sensor frustum horizontal field-of-view (if present).
-    FrustumVFovInRadians: f32,      ///< Sensor frustum vertical field-of-view (if present).
-    FrustumNearZInMeters: f32,      ///< Sensor frustum near Z (if present).
-    FrustumFarZInMeters: f32,       ///< Sensor frustum far Z (if present).
+    FrustumHFovInRadians: f32;      ///< Sensor frustum horizontal field-of-view (if present).
+    FrustumVFovInRadians: f32;      ///< Sensor frustum vertical field-of-view (if present).
+    FrustumNearZInMeters: f32;      ///< Sensor frustum near Z (if present).
+    FrustumFarZInMeters:  f32;      ///< Sensor frustum far Z (if present).
 };
 
 
@@ -454,10 +454,10 @@ ovrTrackerFlags :: enum i32 {
 ///  Specifies the pose for a single sensor.
 ///
 ovrTrackerPose :: struct #ordered #align 8 {
-    TrackerFlags: u32,      ///< ovrTrackerFlags.
-    Pose: ovrPosef,         ///< The sensor's pose. This pose includes sensor tilt (roll and pitch). For a leveled coordinate system use LeveledPose.
-    LeveledPose: ovrPosef,  ///< The sensor's leveled pose, aligned with gravity. This value includes position and yaw of the sensor, but not roll and pitch. It can be used as a reference point to render real-world objects in the correct location.
-    pad0: [4]i8,            ///< \internal struct pad.
+    TrackerFlags: u32;      ///< ovrTrackerFlags.
+    Pose: ovrPosef;         ///< The sensor's pose. This pose includes sensor tilt (roll and pitch). For a leveled coordinate system use LeveledPose.
+    LeveledPose: ovrPosef;  ///< The sensor's leveled pose, aligned with gravity. This value includes position and yaw of the sensor, but not roll and pitch. It can be used as a reference point to render real-world objects in the correct location.
+    pad0: [4]i8;            ///< \internal struct pad.
 };
 
 
@@ -468,19 +468,19 @@ ovrTrackerPose :: struct #ordered #align 8 {
 ///
 ovrTrackingState :: struct #ordered #align 8 {
     /// Predicted head pose (and derivatives) at the requested absolute time.
-    HeadPose:         ovrPoseStatef,
+    HeadPose:         ovrPoseStatef;
 
     /// HeadPose tracking status described by ovrStatusBits.
-    StatusFlags:      u32,
+    StatusFlags:      u32;
 
     /// The most recent calculated pose for each hand when hand controller tracking is present.
     /// HandPoses[ovrHand_Left] refers to the left hand and HandPoses[ovrHand_Right] to the right hand.
     /// These values can be combined with ovrInputState for complete hand controller information.
-    HandPoses:         [2]ovrPoseStatef,
+    HandPoses:         [2]ovrPoseStatef;
 
     /// HandPoses status flags described by ovrStatusBits.
     /// Only ovrStatus_OrientationTracked and ovrStatus_PositionTracked are reported.
-    HandStatusFlags:  [2]u32,
+    HandStatusFlags:  [2]u32;
 
     /// The pose of the origin captured during calibration.
     /// Like all other poses here, this is expressed in the space set by ovr_RecenterTrackingOrigin,
@@ -489,7 +489,7 @@ ovrTrackingState :: struct #ordered #align 8 {
     /// If an application never calls ovr_RecenterTrackingOrigin or ovr_SpecifyTrackingOrigin, expect
     /// this value to be the identity pose and as such will point respective origin based on
     /// ovrTrackingOrigin requested when calling ovr_GetTrackingState.
-    CalibratedOrigin: ovrPosef,
+    CalibratedOrigin: ovrPosef;
 };
 
 
@@ -502,11 +502,11 @@ ovrTrackingState :: struct #ordered #align 8 {
 /// \see ovr_GetRenderDesc
 ///
 ovrEyeRenderDesc :: struct #ordered #align 4 {
-    Eye: ovrEyeType,                         ///< The eye index to which this instance corresponds.
-    Fov: ovrFovPort,                         ///< The field of view.
-    DistortedViewport: ovrRecti,             ///< Distortion viewport.
-    PixelsPerTanAngleAtCenter: ovrVector2f,  ///< How many display pixels will fit in tan(angle) = 1.
-    HmdToEyeOffset: ovrVector3f,             ///< Translation of each eye, in meters.
+    Eye: ovrEyeType;                         ///< The eye index to which this instance corresponds.
+    Fov: ovrFovPort;                         ///< The field of view.
+    DistortedViewport: ovrRecti;             ///< Distortion viewport.
+    PixelsPerTanAngleAtCenter: ovrVector2f;  ///< How many display pixels will fit in tan(angle) = 1.
+    HmdToEyeOffset: ovrVector3f;             ///< Translation of each eye, in meters.
 };
 
 
@@ -518,9 +518,9 @@ ovrEyeRenderDesc :: struct #ordered #align 4 {
 /// \see ovrLayerEyeFovDepth, ovrTimewarpProjectionDesc_FromProjection
 ///
 ovrTimewarpProjectionDesc :: struct #ordered #align 4 {
-    Projection22: f32,     ///< Projection matrix element [2][2].
-    Projection23: f32,     ///< Projection matrix element [2][3].
-    Projection32: f32,     ///< Projection matrix element [3][2].
+    Projection22: f32;     ///< Projection matrix element [2][2].
+    Projection23: f32;     ///< Projection matrix element [2][3].
+    Projection32: f32;     ///< Projection matrix element [3][2].
 };
 
 
@@ -536,8 +536,8 @@ ovrTimewarpProjectionDesc :: struct #ordered #align 4 {
 /// \see ovrEyeRenderDesc, ovr_SubmitFrame
 ///
 ovrViewScaleDesc :: struct #ordered #align 4 {
-    HmdToEyeOffset:               [ovrEyeType.ovrEye_Count]ovrVector3f,   ///< Translation of each eye.
-    HmdSpaceToWorldScaleInMeters: f32,                                    ///< Ratio of viewer units to meter units.
+    HmdToEyeOffset:               [ovrEyeType.ovrEye_Count]ovrVector3f;   ///< Translation of each eye.
+    HmdSpaceToWorldScaleInMeters: f32;                                    ///< Ratio of viewer units to meter units.
 };
 
 
@@ -643,16 +643,16 @@ ovrTextureMiscFlags :: enum i32 { // @WARNING: OVR_CAPI.h is inconsistent in typ
 /// \see ovr_CreateTextureSwapChainGL
 ///
 ovrTextureSwapChainDesc :: struct #ordered {
-    Type:        ovrTextureType,  // @WARNING: Unset in OVR_CAPI.h
-    Format:      ovrTextureFormat,
-    ArraySize:   i32,               ///< Only supported with ovrTexture_2D. Not supported on PC at this time.
-    Width:       i32,
-    Height:      i32,
-    MipLevels:   i32,
-    SampleCount: i32,               ///< Current only supported on depth textures
-    StaticImage: ovrBool,           ///< Not buffered in a chain. For images that don't change
-    MiscFlags:   u32,               ///< ovrTextureFlags
-    BindFlags:   u32,               ///< ovrTextureBindFlags. Not used for GL.
+    Type:        ovrTextureType;  // @WARNING: Unset in OVR_CAPI.h
+    Format:      ovrTextureFormat;
+    ArraySize:   i32;               ///< Only supported with ovrTexture_2D. Not supported on PC at this time.
+    Width:       i32;
+    Height:      i32;
+    MipLevels:   i32;
+    SampleCount: i32;               ///< Current only supported on depth textures
+    StaticImage: ovrBool;           ///< Not buffered in a chain. For images that don't change
+    MiscFlags:   u32;               ///< ovrTextureFlags
+    BindFlags:   u32;               ///< ovrTextureBindFlags. Not used for GL.
 };
 
 /// Description used to create a mirror texture.
@@ -661,10 +661,10 @@ ovrTextureSwapChainDesc :: struct #ordered {
 /// \see ovr_CreateMirrorTextureGL
 ///
 ovrMirrorTextureDesc :: struct #ordered {
-    Format:    ovrTextureFormat,
-    Width:     i32,
-    Height:    i32,
-    MiscFlags: u32,              ///< ovrTextureFlags
+    Format:    ovrTextureFormat;
+    Width:     i32;
+    Height:    i32;
+    MiscFlags: u32;              ///< ovrTextureFlags
 };
 
 ovrTextureSwapChain :: #type ^struct {};
@@ -753,18 +753,18 @@ ovrTouch :: enum i32 {
 /// Currently, those values will NOT change during a session.
 ovrTouchHapticsDesc :: struct #ordered #align 8 {
     // Haptics engine frequency/sample-rate, sample time in seconds equals 1.0/sampleRateHz
-    SampleRateHz: i32,
+    SampleRateHz: i32;
     // Size of each Haptics sample, sample value range is [0, 2^(Bytes*8)-1]
-    SampleSizeInBytes: i32,
+    SampleSizeInBytes: i32;
 
     // Queue size that would guarantee Haptics engine would not starve for data
     // Make sure size doesn't drop below it for best results
-    QueueMinSizeToAvoidStarvation: i32,
+    QueueMinSizeToAvoidStarvation: i32;
 
     // Minimum, Maximum and Optimal number of samples that can be sent to Haptics through ovr_SubmitControllerVibration
-    SubmitMinSamples: i32,
-    SubmitMaxSamples: i32,
-    SubmitOptimalSamples: i32,
+    SubmitMinSamples: i32;
+    SubmitMaxSamples: i32;
+    SubmitOptimalSamples: i32;
 };
 
 /// Specifies which controller is connected; multiple can be connected at once.
@@ -796,20 +796,20 @@ ovrHapticsBufferSubmitMode :: enum i32 {
 /// Haptics buffer descriptor, contains amplitude samples used for Touch vibration
 ovrHapticsBuffer :: struct #ordered {
     /// Samples stored in opaque format
-    Samples: rawptr, // @WARNING: const void* 
+    Samples: rawptr; // @WARNING: const void* 
     /// Number of samples
-    SamplesCount: i32,
+    SamplesCount: i32;
     /// How samples are submitted to the hardware
-    SubmitMode: ovrHapticsBufferSubmitMode,
+    SubmitMode: ovrHapticsBufferSubmitMode;
 };
 
 /// State of the Haptics playback for Touch vibration
 ovrHapticsPlaybackState :: struct #ordered {
     // Remaining space available to queue more samples
-    RemainingQueueSpace: i32,
+    RemainingQueueSpace: i32;
 
     // Number of samples currently queued
-    SamplesQueued: i32,
+    SamplesQueued: i32;
 };
 
 /// Position tracked devices
@@ -839,22 +839,22 @@ ovrBoundaryType :: enum i32 {
 /// Boundary system look and feel
 ovrBoundaryLookAndFeel :: struct #ordered {
     // Boundary color (alpha channel is ignored)
-    Color: ovrColorf,
+    Color: ovrColorf;
 };
 
 /// Provides boundary test information
 ovrBoundaryTestResult :: struct #ordered {
     // True if the boundary system is being triggered. Note that due to fade in/out effects this may not exactly match visibility.
-    IsTriggering: ovrBool,
+    IsTriggering: ovrBool;
     
     // Distance to the closest play area or outer boundary surface.
-    ClosestDistance: f32,
+    ClosestDistance: f32;
     
     // Closest point on the boundary surface.
-    ClosestPoint: ovrVector3f,
+    ClosestPoint: ovrVector3f;
     
     // Unit surface normal of the closest boundary surface.
-    ClosestPointNormal: ovrVector3f,
+    ClosestPointNormal: ovrVector3f;
 };
 
 /// Provides names for the left and right hand array indexes.
@@ -875,69 +875,69 @@ ovrHandType :: enum i32 {
 /// their inputs are combined.
 ovrInputState :: struct #ordered {
     /// System type when the controller state was last updated.
-    TimeInSeconds: f64,
+    TimeInSeconds: f64;
 
     /// Values for buttons described by ovrButton.
-    Buttons: u32,
+    Buttons: u32;
 
     /// Touch values for buttons and sensors as described by ovrTouch.
-    Touches: u32,
+    Touches: u32;
 
     /// Left and right finger trigger values (ovrHand_Left and ovrHand_Right), in the range 0.0 to 1.0f.
     /// Returns 0 if the value would otherwise be less than 0.1176, for ovrControllerType_XBox.
     /// This has been formally named simply "Trigger". We retain the name IndexTrigger for backwards code compatibility.
     /// User-facing documentation should refer to it as the Trigger.
-    IndexTrigger: [ovrHandType.ovrHand_Count]f32,
+    IndexTrigger: [ovrHandType.ovrHand_Count]f32;
 
     /// Left and right hand trigger values (ovrHand_Left and ovrHand_Right), in the range 0.0 to 1.0f.
     /// This has been formally named "Grip Button". We retain the name HandTrigger for backwards code compatibility.
     /// User-facing documentation should refer to it as the Grip Button or simply Grip.
-    HandTrigger: [ovrHandType.ovrHand_Count]f32,
+    HandTrigger: [ovrHandType.ovrHand_Count]f32;
 
     /// Horizontal and vertical thumbstick axis values (ovrHand_Left and ovrHand_Right), in the range -1.0f to 1.0f.
     /// Returns a deadzone (value 0) per each axis if the value on that axis would otherwise have been between -.2746 to +.2746, for ovrControllerType_XBox
-    Thumbstick: [ovrHandType.ovrHand_Count]ovrVector2f,
+    Thumbstick: [ovrHandType.ovrHand_Count]ovrVector2f;
 
     /// The type of the controller this state is for.
-    ControllerType: ovrControllerType,
+    ControllerType: ovrControllerType;
 
     /// Left and right finger trigger values (ovrHand_Left and ovrHand_Right), in the range 0.0 to 1.0f.
     /// Does not apply a deadzone.  Only touch applies a filter.
     /// This has been formally named simply "Trigger". We retain the name IndexTrigger for backwards code compatibility.
     /// User-facing documentation should refer to it as the Trigger.
     /// Added in 1.7
-    IndexTriggerNoDeadzone: [ovrHandType.ovrHand_Count]f32,
+    IndexTriggerNoDeadzone: [ovrHandType.ovrHand_Count]f32;
 
     /// Left and right hand trigger values (ovrHand_Left and ovrHand_Right), in the range 0.0 to 1.0f.
     /// Does not apply a deadzone. Only touch applies a filter.
     /// This has been formally named "Grip Button". We retain the name HandTrigger for backwards code compatibility.
     /// User-facing documentation should refer to it as the Grip Button or simply Grip.
     /// Added in 1.7
-    HandTriggerNoDeadzone: [ovrHandType.ovrHand_Count]f32,
+    HandTriggerNoDeadzone: [ovrHandType.ovrHand_Count]f32;
 
     /// Horizontal and vertical thumbstick axis values (ovrHand_Left and ovrHand_Right), in the range -1.0f to 1.0f
     /// Does not apply a deadzone or filter.
     /// Added in 1.7
-    ThumbstickNoDeadzone: [ovrHandType.ovrHand_Count]ovrVector2f,
+    ThumbstickNoDeadzone: [ovrHandType.ovrHand_Count]ovrVector2f;
 
     /// Left and right finger trigger values (ovrHand_Left and ovrHand_Right), in the range 0.0 to 1.0f.
     /// No deadzone or filter
     /// This has been formally named "Grip Button". We retain the name HandTrigger for backwards code compatibility.
     /// User-facing documentation should refer to it as the Grip Button or simply Grip.
     /// Added in 1.11
-    IndexTriggerRaw: [ovrHandType.ovrHand_Count]f32,
+    IndexTriggerRaw: [ovrHandType.ovrHand_Count]f32;
 
     /// Left and right hand trigger values (ovrHand_Left and ovrHand_Right), in the range 0.0 to 1.0f.
     /// No deadzone or filter
     /// This has been formally named "Grip Button". We retain the name HandTrigger for backwards code compatibility.
     /// User-facing documentation should refer to it as the Grip Button or simply Grip.
     /// Added in 1.11
-    HandTriggerRaw: [ovrHandType.ovrHand_Count]f32,
+    HandTriggerRaw: [ovrHandType.ovrHand_Count]f32;
 
     /// Horizontal and vertical thumbstick axis values (ovrHand_Left and ovrHand_Right), in the range -1.0f to 1.0f
     /// No deadzone or filter
     /// Added in 1.11
-    ThumbstickRaw: [ovrHandType.ovrHand_Count]ovrVector2f,
+    ThumbstickRaw: [ovrHandType.ovrHand_Count]ovrVector2f;
 };
 
 
@@ -1002,7 +1002,7 @@ ovrLogLevel :: enum i32 {
 /// \param[in] message is a UTF8-encoded null-terminated string.
 /// \see ovrInitParams, ovrLogLevel, ovr_Initialize
 ///
-ovrLogCallback :: #type proc(userData: uint, level: i32, message: ^byte) #cc_c; // @WARNING: message was initially const char* in OVR_CAPI.h
+ovrLogCallback :: #type proc(userData: uint, level: i32, message: ^u8) #cc_c; // @WARNING: message was initially const char* in OVR_CAPI.h
 
 
 /// Parameters for ovr_Initialize.
@@ -1012,29 +1012,29 @@ ovrLogCallback :: #type proc(userData: uint, level: i32, message: ^byte) #cc_c; 
 ovrInitParams :: struct #ordered #align 8 {
     /// Flags from ovrInitFlags to override default behavior.
     /// Use 0 for the defaults.
-    Flags:                 u32,
+    Flags:                 u32;
 
     /// Requests a specific minor version of the LibOVR runtime.
     /// Flags must include ovrInit_RequestVersion or this will be ignored and OVR_MINOR_VERSION 
     /// will be used. If you are directly calling the LibOVRRT version of ovr_Initialize
     /// in the LibOVRRT DLL then this must be valid and include ovrInit_RequestVersion.
-    RequestedMinorVersion: u32,
+    RequestedMinorVersion: u32;
 
     /// User-supplied log callback function, which may be called at any time
     /// asynchronously from multiple threads until ovr_Shutdown completes.
     /// Use NULL to specify no log callback.
-    LogCallback:           ovrLogCallback,
+    LogCallback:           ovrLogCallback;
 
     /// User-supplied data which is passed as-is to LogCallback. Typically this
     /// is used to store an application-specific pointer which is read in the
     /// callback function.
-    UserData:              uint,
+    UserData:              uint;
 
     /// Relative number of milliseconds to wait for a connection to the server
     /// before failing. Use 0 for the default timeout.
-    ConnectionTimeoutMS:   u32,
+    ConnectionTimeoutMS:   u32;
 
-    pad0:                  [4]i8, ///< \internal
+    pad0:                  [4]i8; ///< \internal
 
 };
 
@@ -1093,7 +1093,7 @@ ovrInitParams :: struct #ordered #align 8 {
 /// \see ovr_Shutdown
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_Initialize(const ovrInitParams* params);
-ovr_Initialize :: proc(params: ^ovrInitParams) -> ovrResult #foreign ovr "ovr_Initialize";
+foreign ovr ovr_Initialize :: proc(params: ^ovrInitParams) -> ovrResult ---;
 
 
 /// Shuts down LibOVR
@@ -1107,7 +1107,7 @@ ovr_Initialize :: proc(params: ^ovrInitParams) -> ovrResult #foreign ovr "ovr_In
 /// \see ovr_Initialize
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(void) ovr_Shutdown();
-ovr_Shutdown :: proc() #foreign ovr "ovr_Shutdown";
+foreign ovr ovr_Shutdown :: proc() ---;
 
 /// Returns information about the most recent failed return value by the
 /// current thread for this library.
@@ -1125,7 +1125,7 @@ ovr_Shutdown :: proc() #foreign ovr "ovr_Shutdown";
 /// \see ovrErrorInfo
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(void) ovr_GetLastErrorInfo(ovrErrorInfo* errorInfo);
-ovr_GetLastErrorInfo :: proc(errorInfo: ^ovrErrorInfo) #foreign ovr "ovr_GetLastErrorInfo";
+foreign ovr ovr_GetLastErrorInfo :: proc(errorInfo: ^ovrErrorInfo) ---;
 
 
 /// Returns the version string representing the LibOVRRT version.
@@ -1142,7 +1142,7 @@ ovr_GetLastErrorInfo :: proc(errorInfo: ^ovrErrorInfo) #foreign ovr "ovr_GetLast
 /// \return Returns a UTF8-encoded null-terminated version string.
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(const char*) ovr_GetVersionString();
-ovr_GetVersionString :: proc() -> ^byte #foreign ovr "ovr_GetVersionString"; // @WARNING: returns const char* in OVR_CAPI.h
+foreign ovr ovr_GetVersionString :: proc() -> ^u8 ---; // @WARNING: returns const char* in OVR_CAPI.h
 
 
 /// Writes a message string to the LibOVR tracing mechanism (if enabled).
@@ -1157,7 +1157,7 @@ ovr_GetVersionString :: proc() -> ^byte #foreign ovr "ovr_GetVersionString"; // 
 /// \see ovrLogLevel, ovrLogCallback
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(int) ovr_TraceMessage(int level, const char* message);
-ovr_TraceMessage :: proc(level: i32, message: ^byte) -> i32 #foreign ovr "ovr_TraceMessage"; // @WARNING: message originall const char* in OVR_CAPI.h
+foreign ovr ovr_TraceMessage :: proc(level: i32, message: ^u8) -> i32 ---; // @WARNING: message originall const char* in OVR_CAPI.h
 
 
 /// Identify client application info.
@@ -1187,7 +1187,7 @@ ovr_TraceMessage :: proc(level: i32, message: ^byte) -> i32 #foreign ovr "ovr_Tr
 ///     \endcode
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_IdentifyClient(const char* identity);
-ovr_IdentifyClient :: proc(identify: ^byte) -> ovrResult #foreign ovr "ovr_IdentifyClient"; // @WARNING: identity originally const char* in OVR_CAPI.h
+foreign ovr ovr_IdentifyClient :: proc(identify: ^u8) -> ovrResult ---; // @WARNING: identity originally const char* in OVR_CAPI.h
 
 
 //-------------------------------------------------------------------------------------
@@ -1209,7 +1209,7 @@ ovr_IdentifyClient :: proc(identify: ^byte) -> ovrResult #foreign ovr "ovr_Ident
 ///         no HMD is present.
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrHmdDesc) ovr_GetHmdDesc(ovrSession session);
-ovr_GetHmdDesc :: proc(session: ovrSession) -> ovrHmdDesc #foreign ovr "ovr_GetHmdDesc";
+foreign ovr ovr_GetHmdDesc :: proc(session: ovrSession) -> ovrHmdDesc ---;
 
 
 /// Returns the number of attached trackers.
@@ -1222,7 +1222,7 @@ ovr_GetHmdDesc :: proc(session: ovrSession) -> ovrHmdDesc #foreign ovr "ovr_GetH
 /// \return Returns unsigned int count.
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(unsigned int) ovr_GetTrackerCount(ovrSession session);
-ovr_GetTrackerCount :: proc(session: ovrSession) -> u32 #foreign ovr "ovr_GetTrackerCount";
+foreign ovr ovr_GetTrackerCount :: proc(session: ovrSession) -> u32 ---;
 
 
 /// Returns a given attached tracker description.
@@ -1241,10 +1241,10 @@ ovr_GetTrackerCount :: proc(session: ovrSession) -> u32 #foreign ovr "ovr_GetTra
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrTrackerDesc) ovr_GetTrackerDesc(ovrSession session, unsigned int trackerDescIndex);
 //#TrackerDeckBlob :: struct #ordered {[4]f32};
-//GetTrackerDesc :: proc(...) -> TrackerBlob #foreign ...;
+//foreign ovr GetTrackerDesc :: proc(...) -> TrackerBlob #foreign ... ---;
 
-ovr_GetTrackerDesc :: proc(session: ovrSession, trackerDescIndex: u32) -> ovrTrackerDesc #foreign ovr "ovr_GetTrackerDesc";
-//ovr_GetTrackerDesc :: proc(session: ovrSession, trackerDescIndex: u32) -> TrackerDeckBlob #foreign ovr "ovr_GetTrackerDesc";
+foreign ovr ovr_GetTrackerDesc :: proc(session: ovrSession, trackerDescIndex: u32) -> ovrTrackerDesc ---;
+//foreign ovr ovr_GetTrackerDesc :: proc(session: ovrSession, trackerDescIndex: u32) -> TrackerDeckBlob ---;
 
 
 /// Creates a handle to a VR session.
@@ -1272,7 +1272,7 @@ ovr_GetTrackerDesc :: proc(session: ovrSession, trackerDescIndex: u32) -> ovrTra
 /// \see ovr_Destroy
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_Create(ovrSession* pSession, ovrGraphicsLuid* pLuid);
-ovr_Create :: proc(pSession: ^ovrSession, pLuid: ^ovrGraphicsLuid) -> ovrResult #foreign ovr "ovr_Create";
+foreign ovr ovr_Create :: proc(pSession: ^ovrSession, pLuid: ^ovrGraphicsLuid) -> ovrResult ---;
 
 
 /// Destroys the session.
@@ -1281,7 +1281,7 @@ ovr_Create :: proc(pSession: ^ovrSession, pLuid: ^ovrGraphicsLuid) -> ovrResult 
 /// \see ovr_Create
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(void) ovr_Destroy(ovrSession session);
-ovr_Destroy :: proc(ovrSession) #foreign ovr "ovr_Destroy";
+foreign ovr ovr_Destroy :: proc(ovrSession) ---;
 
 
 /// Specifies status information for the current session.
@@ -1289,12 +1289,12 @@ ovr_Destroy :: proc(ovrSession) #foreign ovr "ovr_Destroy";
 /// \see ovr_GetSessionStatus
 ///
 ovrSessionStatus :: struct #ordered {
-    IsVisible:      ovrBool,  ///< True if the process has VR focus and thus is visible in the HMD.
-    HmdPresent:     ovrBool,  ///< True if an HMD is present.
-    HmdMounted:     ovrBool,  ///< True if the HMD is on the user's head.
-    DisplayLost:    ovrBool,  ///< True if the session is in a display-lost state. See ovr_SubmitFrame.
-    ShouldQuit:     ovrBool,  ///< True if the application should initiate shutdown.
-    ShouldRecenter: ovrBool,  ///< True if UX has requested re-centering. Must call ovr_ClearShouldRecenterFlag, ovr_RecenterTrackingOrigin or ovr_SpecifyTrackingOrigin
+    IsVisible:      ovrBool;  ///< True if the process has VR focus and thus is visible in the HMD.
+    HmdPresent:     ovrBool;  ///< True if an HMD is present.
+    HmdMounted:     ovrBool;  ///< True if the HMD is on the user's head.
+    DisplayLost:    ovrBool;  ///< True if the session is in a display-lost state. See ovr_SubmitFrame.
+    ShouldQuit:     ovrBool;  ///< True if the application should initiate shutdown.
+    ShouldRecenter: ovrBool;  ///< True if UX has requested re-centering. Must call ovr_ClearShouldRecenterFlag, ovr_RecenterTrackingOrigin or ovr_SpecifyTrackingOrigin
 };
 
 
@@ -1311,7 +1311,7 @@ ovrSessionStatus :: struct #ordered {
 //        must destroy the session.
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_GetSessionStatus(ovrSession session, ovrSessionStatus* sessionStatus);
-ovr_GetSessionStatus :: proc(session: ovrSession, sessionStatus: ^ovrSessionStatus) -> ovrResult #foreign ovr "ovr_GetSessionStatus";
+foreign ovr ovr_GetSessionStatus :: proc(session: ovrSession, sessionStatus: ^ovrSessionStatus) -> ovrResult ---;
 
 //@}
 
@@ -1342,7 +1342,7 @@ ovr_GetSessionStatus :: proc(session: ovrSession, sessionStatus: ^ovrSessionStat
 ///
 /// \see ovrTrackingOrigin, ovr_GetTrackingOriginType
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_SetTrackingOriginType(ovrSession session, ovrTrackingOrigin origin);
-ovr_SetTrackingOriginType :: proc(session: ovrSession, origin: ovrTrackingOrigin) -> ovrResult #foreign ovr "ovr_SetTrackingOriginType";
+foreign ovr ovr_SetTrackingOriginType :: proc(session: ovrSession, origin: ovrTrackingOrigin) -> ovrResult ---;
 
 
 /// Gets the tracking origin state
@@ -1353,7 +1353,7 @@ ovr_SetTrackingOriginType :: proc(session: ovrSession, origin: ovrTrackingOrigin
 ///
 /// \see ovrTrackingOrigin, ovr_SetTrackingOriginType
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrTrackingOrigin) ovr_GetTrackingOriginType(ovrSession session);
-ovr_GetTrackingOriginType :: proc(session: ovrSession) -> ovrTrackingOrigin #foreign ovr "ovr_GetTrackingOriginType";
+foreign ovr ovr_GetTrackingOriginType :: proc(session: ovrSession) -> ovrTrackingOrigin ---;
 
 
 /// Re-centers the sensor position and orientation.
@@ -1385,7 +1385,7 @@ ovr_GetTrackingOriginType :: proc(session: ovrSession) -> ovrTrackingOrigin #for
 /// \see ovrTrackingOrigin, ovr_GetTrackerPose, ovr_SpecifyTrackingOrigin
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_RecenterTrackingOrigin(ovrSession session);
-ovr_RecenterTrackingOrigin :: proc(session: ovrSession) -> ovrResult #foreign ovr "ovr_RecenterTrackingOrigin";
+foreign ovr ovr_RecenterTrackingOrigin :: proc(session: ovrSession) -> ovrResult ---;
 
 /// Allows manually tweaking the sensor position and orientation.
 ///
@@ -1430,7 +1430,7 @@ ovr_RecenterTrackingOrigin :: proc(session: ovrSession) -> ovrResult #foreign ov
 /// \see ovrTrackingOrigin, ovr_GetTrackerPose, ovr_RecenterTrackingOrigin
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_SpecifyTrackingOrigin(ovrSession session, ovrPosef originPose);
-ovr_SpecifyTrackingOrigin :: proc(session: ovrSession, originPose: ovrPosef) -> ovrResult #foreign ovr "ovr_SpecifyTrackingOrigin";
+foreign ovr ovr_SpecifyTrackingOrigin :: proc(session: ovrSession, originPose: ovrPosef) -> ovrResult ---;
 
 
 /// Clears the ShouldRecenter status bit in ovrSessionStatus.
@@ -1439,7 +1439,7 @@ ovr_SpecifyTrackingOrigin :: proc(session: ovrSession, originPose: ovrPosef) -> 
 /// detected. Since this is automatically done by ovr_RecenterTrackingOrigin and ovr_SpecifyTrackingOrigin,
 /// this function only needs to be called when application is doing its own re-centering logic.
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(void) ovr_ClearShouldRecenterFlag(ovrSession session);
-ovr_ClearShouldRecenterFlag :: proc(session: ovrSession) #foreign ovr "ovr_ClearShouldRecenterFlag";
+foreign ovr ovr_ClearShouldRecenterFlag :: proc(session: ovrSession) ---;
 
 
 /// Returns tracking state reading based on the specified absolute system time.
@@ -1461,7 +1461,7 @@ ovr_ClearShouldRecenterFlag :: proc(session: ovrSession) #foreign ovr "ovr_Clear
 /// \see ovrTrackingState, ovr_GetEyePoses, ovr_GetTimeInSeconds
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrTrackingState) ovr_GetTrackingState(ovrSession session, double absTime, ovrBool latencyMarker);
-ovr_GetTrackingState :: proc(session: ovrSession, absTime: f64, latencyMarker: ovrBool) -> ovrTrackingState #foreign ovr "ovr_GetTrackingState";
+foreign ovr ovr_GetTrackingState :: proc(session: ovrSession, absTime: f64, latencyMarker: ovrBool) -> ovrTrackingState ---;
 
 
 
@@ -1476,7 +1476,7 @@ ovr_GetTrackingState :: proc(session: ovrSession, absTime: f64, latencyMarker: o
 /// \see ovr_GetTrackerCount
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrTrackerPose) ovr_GetTrackerPose(ovrSession session, unsigned int trackerPoseIndex);
-ovr_GetTrackerPose :: proc(session: ovrSession, trackerPoseIndex: u32) -> ovrTrackerPose #foreign ovr "ovr_GetTrackerPose";
+foreign ovr ovr_GetTrackerPose :: proc(session: ovrSession, trackerPoseIndex: u32) -> ovrTrackerPose ---;
 
 
 
@@ -1489,7 +1489,7 @@ ovr_GetTrackerPose :: proc(session: ovrSession, trackerPoseIndex: u32) -> ovrTra
 /// \see ovrControllerType
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_GetInputState(ovrSession session, ovrControllerType controllerType, ovrInputState* inputState);
-ovr_GetInputState :: proc(session: ovrSession, controllerType: ovrControllerType, inputState: ^ovrInputState) -> ovrResult #foreign ovr "ovr_GetInputState";
+foreign ovr ovr_GetInputState :: proc(session: ovrSession, controllerType: ovrControllerType, inputState: ^ovrInputState) -> ovrResult ---;
 
 
 /// Returns controller types connected to the system OR'ed together.
@@ -1499,7 +1499,7 @@ ovr_GetInputState :: proc(session: ovrSession, controllerType: ovrControllerType
 /// \see ovrControllerType
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(unsigned int) ovr_GetConnectedControllerTypes(ovrSession session);
-ovr_GetConnectedControllerTypes :: proc(session: ovrSession) -> u32 #foreign ovr "ovr_GetConnectedControllerTypes";
+foreign ovr ovr_GetConnectedControllerTypes :: proc(session: ovrSession) -> u32 ---;
 
 /// Gets information about Haptics engine for the specified Touch controller.
 ///
@@ -1509,7 +1509,7 @@ ovr_GetConnectedControllerTypes :: proc(session: ovrSession) -> u32 #foreign ovr
 /// \return Returns an ovrTouchHapticsDesc.
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrTouchHapticsDesc) ovr_GetTouchHapticsDesc(ovrSession session, ovrControllerType controllerType);
-ovr_GetTouchHapticsDesc :: proc(session: ovrSession, controllerType: ovrControllerType) -> ovrTouchHapticsDesc #foreign ovr "ovr_GetTouchHapticsDesc";
+foreign ovr ovr_GetTouchHapticsDesc :: proc(session: ovrSession, controllerType: ovrControllerType) -> ovrTouchHapticsDesc ---;
 
 /// Sets constant vibration (with specified frequency and amplitude) to a controller.
 /// Note: ovr_SetControllerVibration cannot be used interchangeably with ovr_SubmitControllerVibration.
@@ -1526,7 +1526,7 @@ ovr_GetTouchHapticsDesc :: proc(session: ovrSession, controllerType: ovrControll
 ///     - ovrSuccess_DeviceUnavailable: The call succeeded but the device referred to by controllerType is not available.
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_SetControllerVibration(ovrSession session, ovrControllerType controllerType, float frequency, float amplitude);
-ovr_SetControllerVibration :: proc(session: ovrSession, controllerType: ovrControllerType, frequency, amplitude: f32) -> ovrResult #foreign ovr "ovr_SetControllerVibration";
+foreign ovr ovr_SetControllerVibration :: proc(session: ovrSession, controllerType: ovrControllerType, frequency, amplitude: f32) -> ovrResult ---;
 
 /// Submits a Haptics buffer (used for vibration) to Touch (only) controllers.
 /// Note: ovr_SubmitControllerVibration cannot be used interchangeably with ovr_SetControllerVibration.
@@ -1542,7 +1542,7 @@ ovr_SetControllerVibration :: proc(session: ovrSession, controllerType: ovrContr
 /// \see ovrHapticsBuffer
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_SubmitControllerVibration(ovrSession session, ovrControllerType controllerType, const ovrHapticsBuffer* buffer);
-ovr_SubmitControllerVibration :: proc(session: ovrSession, controllerType: ovrControllerType, buffer: ^ovrHapticsBuffer) -> ovrResult #foreign ovr "ovr_SubmitControllerVibration"; // @WARNING: const removed
+foreign ovr ovr_SubmitControllerVibration :: proc(session: ovrSession, controllerType: ovrControllerType, buffer: ^ovrHapticsBuffer) -> ovrResult ---; // @WARNING: const removed
 
 /// Gets the Haptics engine playback state of a specific Touch controller.
 ///
@@ -1557,7 +1557,7 @@ ovr_SubmitControllerVibration :: proc(session: ovrSession, controllerType: ovrCo
 /// \see ovrHapticsPlaybackState
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_GetControllerVibrationState(ovrSession session, ovrControllerType controllerType, ovrHapticsPlaybackState* outState);
-ovr_GetControllerVibrationState :: proc(session: ovrSession, controllerType: ovrControllerType, outState: ^ovrHapticsPlaybackState) -> ovrResult #foreign ovr "ovr_GetControllerVibrationState";
+foreign ovr ovr_GetControllerVibrationState :: proc(session: ovrSession, controllerType: ovrControllerType, outState: ^ovrHapticsPlaybackState) -> ovrResult ---;
 
 
 /// Tests collision/proximity of position tracked devices (e.g. HMD and/or Touch) against the Boundary System.
@@ -1577,8 +1577,8 @@ ovr_GetControllerVibrationState :: proc(session: ovrSession, controllerType: ovr
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_TestBoundary(ovrSession session, ovrTrackedDeviceType deviceBitmask, 
 //                                                            ovrBoundaryType boundaryType, ovrBoundaryTestResult* outTestResult);
-ovr_TestBoundary :: proc(session: ovrSession, deviceBitmask: ovrTrackedDeviceType, 
-                         boundaryType: ovrBoundaryType, outTestResult: ^ovrBoundaryTestResult) -> ovrResult #foreign ovr "ovr_TestBoundary";
+foreign ovr ovr_TestBoundary :: proc(session: ovrSession, deviceBitmask: ovrTrackedDeviceType, 
+                         boundaryType: ovrBoundaryType, outTestResult: ^ovrBoundaryTestResult) -> ovrResult ---;
 
 /// Tests collision/proximity of a 3D point against the Boundary System.
 ///
@@ -1595,8 +1595,8 @@ ovr_TestBoundary :: proc(session: ovrSession, deviceBitmask: ovrTrackedDeviceTyp
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_TestBoundaryPoint(ovrSession session, const ovrVector3f* point, 
 //                                                                 ovrBoundaryType singleBoundaryType, ovrBoundaryTestResult* outTestResult);
-ovr_TestBoundaryPoint :: proc(session: ovrSession, point: ^ovrVector3f, 
-                              singleBoundaryType: ovrBoundaryType, outTestResult: ^ovrBoundaryTestResult) -> ovrResult #foreign ovr "ovr_TestBoundaryPoint"; // @WARNING: const removed
+foreign ovr ovr_TestBoundaryPoint :: proc(session: ovrSession, point: ^ovrVector3f, 
+                              singleBoundaryType: ovrBoundaryType, outTestResult: ^ovrBoundaryTestResult) -> ovrResult ---; // @WARNING: const removed
 
 /// Sets the look and feel of the Boundary System.
 ///
@@ -1606,7 +1606,7 @@ ovr_TestBoundaryPoint :: proc(session: ovrSession, point: ^ovrVector3f,
 /// \see ovrBoundaryLookAndFeel
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_SetBoundaryLookAndFeel(ovrSession session, const ovrBoundaryLookAndFeel* lookAndFeel);
-ovr_SetBoundaryLookAndFeel :: proc(session: ovrSession, lookAndFeel: ^ovrBoundaryLookAndFeel) -> ovrResult #foreign ovr "ovr_SetBoundaryLookAndFeel"; // @WARNING: const removed
+foreign ovr ovr_SetBoundaryLookAndFeel :: proc(session: ovrSession, lookAndFeel: ^ovrBoundaryLookAndFeel) -> ovrResult ---; // @WARNING: const removed
 
 /// Resets the look and feel of the Boundary System to its default state.
 ///
@@ -1615,7 +1615,7 @@ ovr_SetBoundaryLookAndFeel :: proc(session: ovrSession, lookAndFeel: ^ovrBoundar
 /// \see ovrBoundaryLookAndFeel
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_ResetBoundaryLookAndFeel(ovrSession session);
-ovr_ResetBoundaryLookAndFeel :: proc(session: ovrSession) -> ovrResult #foreign ovr "ovr_ResetBoundaryLookAndFeel";
+foreign ovr ovr_ResetBoundaryLookAndFeel :: proc(session: ovrSession) -> ovrResult ---;
 
 /// Gets the geometry of the Boundary System's "play area" or "outer boundary" as 3D floor points.
 ///
@@ -1629,7 +1629,7 @@ ovr_ResetBoundaryLookAndFeel :: proc(session: ovrSession) -> ovrResult #foreign 
 ///     - ovrSuccess_BoundaryInvalid: The call succeeded but the result is not a valid boundary due to not being set up.
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_GetBoundaryGeometry(ovrSession session, ovrBoundaryType boundaryType, ovrVector3f* outFloorPoints, int* outFloorPointsCount);
-ovr_GetBoundaryGeometry :: proc(session: ovrSession, boundaryType: ovrBoundaryType, outFloorPoints: ^ovrVector3f, outFloorPointsCount: ^i32) -> ovrResult #foreign ovr "ovr_GetBoundaryGeometry";
+foreign ovr ovr_GetBoundaryGeometry :: proc(session: ovrSession, boundaryType: ovrBoundaryType, outFloorPoints: ^ovrVector3f, outFloorPointsCount: ^i32) -> ovrResult ---;
 
 /// Gets the dimension of the Boundary System's "play area" or "outer boundary".
 ///
@@ -1642,7 +1642,7 @@ ovr_GetBoundaryGeometry :: proc(session: ovrSession, boundaryType: ovrBoundaryTy
 ///     - ovrSuccess_BoundaryInvalid: The call succeeded but the result is not a valid boundary due to not being set up.
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_GetBoundaryDimensions(ovrSession session, ovrBoundaryType boundaryType, ovrVector3f* outDimensions);
-ovr_GetBoundaryDimensions :: proc(session: ovrSession, boundaryType: ovrBoundaryType, outDimensions: ^ovrVector3f) -> ovrResult #foreign ovr "ovr_GetBoundaryDimensions";
+foreign ovr ovr_GetBoundaryDimensions :: proc(session: ovrSession, boundaryType: ovrBoundaryType, outDimensions: ^ovrVector3f) -> ovrResult ---;
 
 /// Returns if the boundary is currently visible.
 /// Note: visibility is false if the user has turned off boundaries, otherwise, it's true if the app has requested 
@@ -1657,7 +1657,7 @@ ovr_GetBoundaryDimensions :: proc(session: ovrSession, boundaryType: ovrBoundary
 ///     - ovrSuccess_BoundaryInvalid: The call succeeded but the result is not a valid boundary due to not being set up.
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_GetBoundaryVisible(ovrSession session, ovrBool* outIsVisible); 
-ovr_GetBoundaryVisible :: proc(session: ovrSession, outIsVisible: ^ovrBool) -> ovrResult #foreign ovr "ovr_GetBoundaryVisible";
+foreign ovr ovr_GetBoundaryVisible :: proc(session: ovrSession, outIsVisible: ^ovrBool) -> ovrResult ---;
 
 /// Requests boundary to be visible.
 ///
@@ -1667,7 +1667,7 @@ ovr_GetBoundaryVisible :: proc(session: ovrSession, outIsVisible: ^ovrBool) -> o
 /// \return Returns ovrSuccess upon success.
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_RequestBoundaryVisible(ovrSession session, ovrBool visible);
-ovr_RequestBoundaryVisible :: proc(session: ovrSession, visible: ovrBool) -> ovrResult #foreign ovr "ovr_RequestBoundaryVisible";
+foreign ovr ovr_RequestBoundaryVisible :: proc(session: ovrSession, visible: ovrBool) -> ovrResult ---;
 
 ///@}
 
@@ -1737,8 +1737,8 @@ ovrLayerFlags :: enum i32 {
 /// \see ovrLayerType, ovrLayerFlags
 ///
 ovrLayerHeader :: struct #ordered #align 8 { // @WARNING: aligned to pointer size. @TODO: warning on all other align as pointer size
-    Type:  ovrLayerType,   ///< Described by ovrLayerType.
-    Flags: u32            ///< Described by ovrLayerFlags.
+    Type:  ovrLayerType;   ///< Described by ovrLayerType.
+    Flags: u32;            ///< Described by ovrLayerFlags.
 };
 
 
@@ -1758,29 +1758,29 @@ ovrLayerHeader :: struct #ordered #align 8 { // @WARNING: aligned to pointer siz
 ///
 ovrLayerEyeFov :: struct #ordered #align 8 {  // @WARNING: aligned to pointer size.
     /// Header.Type must be ovrLayerType_EyeFov.
-    Header: ovrLayerHeader,
+    Header: ovrLayerHeader;
 
     /// ovrTextureSwapChains for the left and right eye respectively.
     /// The second one of which can be NULL for cases described above.
-    ColorTexture: [ovrEyeType.ovrEye_Count]ovrTextureSwapChain,
+    ColorTexture: [ovrEyeType.ovrEye_Count]ovrTextureSwapChain;
 
     /// Specifies the ColorTexture sub-rect UV coordinates.
     /// Both Viewport[0] and Viewport[1] must be valid.
-    Viewport: [ovrEyeType.ovrEye_Count]ovrRecti,
+    Viewport: [ovrEyeType.ovrEye_Count]ovrRecti;
 
     /// The viewport field of view.
-    Fov: [ovrEyeType.ovrEye_Count]ovrFovPort,
+    Fov: [ovrEyeType.ovrEye_Count]ovrFovPort;
 
     /// Specifies the position and orientation of each eye view, with the position specified in meters.
     /// RenderPose will typically be the value returned from ovr_CalcEyePoses,
     /// but can be different in special cases if a different head pose is used for rendering.
-    RenderPose: [ovrEyeType.ovrEye_Count]ovrPosef,
+    RenderPose: [ovrEyeType.ovrEye_Count]ovrPosef;
 
     /// Specifies the timestamp when the source ovrPosef (used in calculating RenderPose)
     /// was sampled from the SDK. Typically retrieved by calling ovr_GetTimeInSeconds
     /// around the instant the application calls ovr_GetTrackingState
     /// The main purpose for this is to accurately track app tracking latency.
-    SensorSampleTime: f64,
+    SensorSampleTime: f64;
 
 };
 
@@ -1806,33 +1806,33 @@ ovrLayerEyeFov :: struct #ordered #align 8 {  // @WARNING: aligned to pointer si
 ///
 ovrLayerEyeMatrix :: struct #ordered #align 8 {  // @WARNING: aligned to pointer size.
     /// Header.Type must be ovrLayerType_EyeMatrix.
-    Header: ovrLayerHeader,
+    Header: ovrLayerHeader;
 
     /// ovrTextureSwapChains for the left and right eye respectively.
     /// The second one of which can be NULL for cases described above.
-    ColorTexture: [ovrEyeType.ovrEye_Count]ovrTextureSwapChain,
+    ColorTexture: [ovrEyeType.ovrEye_Count]ovrTextureSwapChain;
 
     /// Specifies the ColorTexture sub-rect UV coordinates.
     /// Both Viewport[0] and Viewport[1] must be valid.
-    Viewport: [ovrEyeType.ovrEye_Count]ovrRecti,
+    Viewport: [ovrEyeType.ovrEye_Count]ovrRecti;
 
     /// Specifies the position and orientation of each eye view, with the position specified in meters.
     /// RenderPose will typically be the value returned from ovr_CalcEyePoses,
     /// but can be different in special cases if a different head pose is used for rendering.
-    RenderPose: [ovrEyeType.ovrEye_Count]ovrPosef,
+    RenderPose: [ovrEyeType.ovrEye_Count]ovrPosef;
 
     /// Specifies the mapping from a view-space vector
     /// to a UV coordinate on the textures given above.
     /// P = (x,y,z,1)*Matrix
     /// TexU  = P.x/P.z
     /// TexV  = P.y/P.z
-    Matrix: [ovrEyeType.ovrEye_Count]ovrMatrix4f,
+    Matrix: [ovrEyeType.ovrEye_Count]ovrMatrix4f;
 
     /// Specifies the timestamp when the source ovrPosef (used in calculating RenderPose)
     /// was sampled from the SDK. Typically retrieved by calling ovr_GetTimeInSeconds
     /// around the instant the application calls ovr_GetTrackingState
     /// The main purpose for this is to accurately track app tracking latency.
-    SensorSampleTime: f64,
+    SensorSampleTime: f64;
 
 };
 
@@ -1855,23 +1855,23 @@ ovrLayerEyeMatrix :: struct #ordered #align 8 {  // @WARNING: aligned to pointer
 ///
 ovrLayerQuad :: struct #ordered #align 8 {  // @WARNING: aligned to pointer size.
     /// Header.Type must be ovrLayerType_Quad.
-    Header: ovrLayerHeader,
+    Header: ovrLayerHeader;
 
     /// Contains a single image, never with any stereo view.
-    ColorTexture: ovrTextureSwapChain,
+    ColorTexture: ovrTextureSwapChain;
 
     /// Specifies the ColorTexture sub-rect UV coordinates.
-    Viewport: ovrRecti,
+    Viewport: ovrRecti;
 
     /// Specifies the orientation and position of the center point of a Quad layer type.
     /// The supplied direction is the vector perpendicular to the quad.
     /// The position is in real-world meters (not the application's virtual world,
     /// the physical world the user is in) and is relative to the "zero" position
     /// set by ovr_RecenterTrackingOrigin unless the ovrLayerFlag_HeadLocked flag is used.
-    QuadPoseCenter: ovrPosef,
+    QuadPoseCenter: ovrPosef;
 
     /// Width and height (respectively) of the quad in meters.
-    QuadSize: ovrVector2f,
+    QuadSize: ovrVector2f;
 
 };
 
@@ -1880,10 +1880,10 @@ ovrLayerQuad :: struct #ordered #align 8 {  // @WARNING: aligned to pointer size
 
 /// Union that combines ovrLayer types in a way that allows them
 /// to be used in a polymorphic way.
-ovrLayer_Union :: raw_union {
-    Header: ovrLayerHeader,
-    EyeFov: ovrLayerEyeFov,
-    Quad:   ovrLayerQuad,
+ovrLayer_Union :: struct #raw_union {
+    Header: ovrLayerHeader;
+    EyeFov: ovrLayerEyeFov;
+    Quad:   ovrLayerQuad;
 };
 
 //@}
@@ -1915,7 +1915,7 @@ ovrLayer_Union :: raw_union {
 /// \see ovr_CreateTextureSwapChainDX, ovr_CreateTextureSwapChainGL
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_GetTextureSwapChainLength(ovrSession session, ovrTextureSwapChain chain, int* out_Length);
-ovr_GetTextureSwapChainLength :: proc(session: ovrSession, chain: ovrTextureSwapChain, out_Length: ^i32) -> ovrResult #foreign ovr "ovr_GetTextureSwapChainLength";
+foreign ovr ovr_GetTextureSwapChainLength :: proc(session: ovrSession, chain: ovrTextureSwapChain, out_Length: ^i32) -> ovrResult ---;
 
 /// Gets the current index in an ovrTextureSwapChain.
 ///
@@ -1928,7 +1928,7 @@ ovr_GetTextureSwapChainLength :: proc(session: ovrSession, chain: ovrTextureSwap
 /// \see ovr_CreateTextureSwapChainDX, ovr_CreateTextureSwapChainGL
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_GetTextureSwapChainCurrentIndex(ovrSession session, ovrTextureSwapChain chain, int* out_Index);
-ovr_GetTextureSwapChainCurrentIndex :: proc(session: ovrSession, chain: ovrTextureSwapChain, out_Index: ^i32) -> ovrResult #foreign ovr "ovr_GetTextureSwapChainCurrentIndex";
+foreign ovr ovr_GetTextureSwapChainCurrentIndex :: proc(session: ovrSession, chain: ovrTextureSwapChain, out_Index: ^i32) -> ovrResult ---;
 
 /// Gets the description of the buffers in an ovrTextureSwapChain
 ///
@@ -1941,7 +1941,7 @@ ovr_GetTextureSwapChainCurrentIndex :: proc(session: ovrSession, chain: ovrTextu
 /// \see ovr_CreateTextureSwapChainDX, ovr_CreateTextureSwapChainGL
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_GetTextureSwapChainDesc(ovrSession session, ovrTextureSwapChain chain, ovrTextureSwapChainDesc* out_Desc);
-ovr_GetTextureSwapChainDesc :: proc(session: ovrSession, chain: ovrTextureSwapChain, out_Desc: ^ovrTextureSwapChainDesc) -> ovrResult #foreign ovr "ovr_GetTextureSwapChainDesc";
+foreign ovr ovr_GetTextureSwapChainDesc :: proc(session: ovrSession, chain: ovrTextureSwapChain, out_Desc: ^ovrTextureSwapChainDesc) -> ovrResult ---;
 
 /// Commits any pending changes to an ovrTextureSwapChain, and advances its current index
 ///
@@ -1961,7 +1961,7 @@ ovr_GetTextureSwapChainDesc :: proc(session: ovrSession, chain: ovrTextureSwapCh
 /// \see ovr_CreateTextureSwapChainDX, ovr_CreateTextureSwapChainGL
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_CommitTextureSwapChain(ovrSession session, ovrTextureSwapChain chain);
-ovr_CommitTextureSwapChain :: proc(session: ovrSession, chain: ovrTextureSwapChain) -> ovrResult #foreign ovr "ovr_CommitTextureSwapChain";
+foreign ovr ovr_CommitTextureSwapChain :: proc(session: ovrSession, chain: ovrTextureSwapChain) -> ovrResult ---;
 
 /// Destroys an ovrTextureSwapChain and frees all the resources associated with it.
 ///
@@ -1971,7 +1971,7 @@ ovr_CommitTextureSwapChain :: proc(session: ovrSession, chain: ovrTextureSwapCha
 /// \see ovr_CreateTextureSwapChainDX, ovr_CreateTextureSwapChainGL
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(void) ovr_DestroyTextureSwapChain(ovrSession session, ovrTextureSwapChain chain);
-ovr_DestroyTextureSwapChain :: proc(session: ovrSession, chain: ovrTextureSwapChain) #foreign ovr "ovr_DestroyTextureSwapChain";
+foreign ovr ovr_DestroyTextureSwapChain :: proc(session: ovrSession, chain: ovrTextureSwapChain) ---;
 
 
 /// MirrorTexture creation is rendering API-specific.
@@ -1986,7 +1986,7 @@ ovr_DestroyTextureSwapChain :: proc(session: ovrSession, chain: ovrTextureSwapCh
 /// \see ovr_CreateMirrorTextureDX, ovr_CreateMirrorTextureGL
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(void) ovr_DestroyMirrorTexture(ovrSession session, ovrMirrorTexture mirrorTexture);
-ovr_DestroyMirrorTexture :: proc(session: ovrSession, mirrorTexture: ovrMirrorTexture) #foreign ovr "ovr_DestroyMirrorTexture";
+foreign ovr ovr_DestroyMirrorTexture :: proc(session: ovrSession, mirrorTexture: ovrMirrorTexture) ---;
 
 /// Calculates the recommended viewport size for rendering a given eye within the HMD
 /// with a given FOV cone.
@@ -2015,7 +2015,7 @@ ovr_DestroyMirrorTexture :: proc(session: ovrSession, mirrorTexture: ovrMirrorTe
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrSizei) ovr_GetFovTextureSize(ovrSession session, ovrEyeType eye, ovrFovPort fov,
 //                                                                float pixelsPerDisplayPixel);
 
-ovr_GetFovTextureSize :: proc(session: ovrSession, eye: ovrEyeType, fov: ovrFovPort, pixelsPerDisplayPixel: f32) -> ovrSizei #foreign ovr "ovr_GetFovTextureSize";
+foreign ovr ovr_GetFovTextureSize :: proc(session: ovrSession, eye: ovrEyeType, fov: ovrFovPort, pixelsPerDisplayPixel: f32) -> ovrSizei ---;
 
 /// Computes the distortion viewport, view adjust, and other rendering parameters for
 /// the specified eye.
@@ -2030,7 +2030,7 @@ ovr_GetFovTextureSize :: proc(session: ovrSession, eye: ovrEyeType, fov: ovrFovP
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrEyeRenderDesc) ovr_GetRenderDesc(ovrSession session,
 //                                                                    ovrEyeType eyeType, ovrFovPort fov);
-ovr_GetRenderDesc :: proc(session: ovrSession, eyeType: ovrEyeType, fov: ovrFovPort) -> ovrEyeRenderDesc #foreign ovr "ovr_GetRenderDesc";
+foreign ovr ovr_GetRenderDesc :: proc(session: ovrSession, eyeType: ovrEyeType, fov: ovrFovPort) -> ovrEyeRenderDesc ---;
 
 /// Submits layers for distortion and display.
 ///
@@ -2097,7 +2097,7 @@ ovr_GetRenderDesc :: proc(session: ovrSession, eyeType: ovrEyeType, fov: ovrFovP
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_SubmitFrame(ovrSession session, long long frameIndex,
 //                                                           const ovrViewScaleDesc* viewScaleDesc,
 //                                                           ovrLayerHeader const * const * layerPtrList, unsigned int layerCount); 
-ovr_SubmitFrame :: proc(session: ovrSession, frameIndex: i64, viewScaleDesc: ^ovrViewScaleDesc, layerPtrList: ^^ovrLayerHeader, layerCount: u32) -> ovrResult #foreign ovr "ovr_SubmitFrame"; // @WARNING: const removed
+foreign ovr ovr_SubmitFrame :: proc(session: ovrSession, frameIndex: i64, viewScaleDesc: ^ovrViewScaleDesc, layerPtrList: ^^ovrLayerHeader, layerCount: u32) -> ovrResult ---; // @WARNING: const removed
 ///@}
 
 
@@ -2116,37 +2116,37 @@ ovrPerfStatsPerCompositorFrame :: struct #ordered #align 4 {
     /// Vsync Frame Index - increments with each HMD vertical synchronization signal (i.e. vsync or refresh rate)
     /// If the compositor drops a frame, expect this value to increment more than 1 at a time.
     ///
-    HmdVsyncIndex: i32,
+    HmdVsyncIndex: i32;
 
     ///
     /// Application stats
     ///
 
     /// Index that increments with each successive ovr_SubmitFrame call
-    AppFrameIndex: i32,
+    AppFrameIndex: i32;
     
     /// If the app fails to call ovr_SubmitFrame on time, then expect this value to increment with each missed frame
-    AppDroppedFrameCount: i32,
+    AppDroppedFrameCount: i32;
     
     /// Motion-to-photon latency for the application
     /// This value is calculated by either using the SensorSampleTime provided for the ovrLayerEyeFov or if that
     /// is not available, then the call to ovr_GetTrackingState which has latencyMarker set to ovrTrue
-    AppMotionToPhotonLatency: f32,
+    AppMotionToPhotonLatency: f32;
     
     /// Amount of queue-ahead in seconds provided to the app based on performance and overlap of CPU & GPU utilization
     /// A value of 0.0 would mean the CPU & GPU workload is being completed in 1 frame's worth of time, while
     /// 11 ms (on the CV1) of queue ahead would indicate that the app's CPU workload for the next frame is
     /// overlapping the app's GPU workload for the current frame.
-    AppQueueAheadTime: f32,
+    AppQueueAheadTime: f32;
     
     /// Amount of time in seconds spent on the CPU by the app's render-thread that calls ovr_SubmitFrame
     /// Measured as elapsed time between from when app regains control from ovr_SubmitFrame to the next time the app
     /// calls ovr_SubmitFrame.
-    AppCpuElapsedTime: f32,
+    AppCpuElapsedTime: f32;
     
     /// Amount of time in seconds spent on the GPU by the app
     /// Measured as elapsed time between each ovr_SubmitFrame call using GPU timing queries.
-    AppGpuElapsedTime: f32,
+    AppGpuElapsedTime: f32;
 
     ///
     /// SDK Compositor stats
@@ -2155,35 +2155,35 @@ ovrPerfStatsPerCompositorFrame :: struct #ordered #align 4 {
     /// Index that increments each time the SDK compositor completes a distortion and timewarp pass
     /// Since the compositor operates asynchronously, even if the app calls ovr_SubmitFrame too late,
     /// the compositor will kick off for each vsync.
-    CompositorFrameIndex: i32,
+    CompositorFrameIndex: i32;
     
     /// Increments each time the SDK compositor fails to complete in time
     /// This is not tied to the app's performance, but failure to complete can be tied to other factors
     /// such as OS capabilities, overall available hardware cycles to execute the compositor in time
     /// and other factors outside of the app's control.
-    CompositorDroppedFrameCount: i32,
+    CompositorDroppedFrameCount: i32;
     
     /// Motion-to-photon latency of the SDK compositor in seconds
     /// This is the latency of timewarp which corrects the higher app latency as well as dropped app frames.
-    CompositorLatency: f32,
+    CompositorLatency: f32;
     
     /// The amount of time in seconds spent on the CPU by the SDK compositor. Unless the VR app is utilizing
     /// all of the CPU cores at their peak performance, there is a good chance the compositor CPU times
     /// will not affect the app's CPU performance in a major way.
-    CompositorCpuElapsedTime: f32,
+    CompositorCpuElapsedTime: f32;
     
     /// The amount of time in seconds spent on the GPU by the SDK compositor. Any time spent on the compositor
     /// will eat away from the available GPU time for the app.
-    CompositorGpuElapsedTime: f32,
+    CompositorGpuElapsedTime: f32;
     
     /// The amount of time in seconds spent from the point the CPU kicks off the compositor to the point in time
     /// the compositor completes the distortion & timewarp on the GPU. In the event the GPU time is not
     /// available, expect this value to be -1.0f
-    CompositorCpuStartToGpuEndElapsedTime: f32,
+    CompositorCpuStartToGpuEndElapsedTime: f32;
     
     /// The amount of time in seconds left after the compositor is done on the GPU to the associated V-Sync time.
     /// In the event the GPU time is not available, expect this value to be -1.0f
-    CompositorGpuEndToVsyncElapsedTime: f32,
+    CompositorGpuEndToVsyncElapsedTime: f32;
 
     ///
     /// Async Spacewarp stats (ASW)
@@ -2191,16 +2191,16 @@ ovrPerfStatsPerCompositorFrame :: struct #ordered #align 4 {
 
     /// Will be true is ASW is active for the given frame such that the application is being forced into
     /// half the frame-rate while the compositor continues to run at full frame-rate
-    AswIsActive: ovrBool,
+    AswIsActive: ovrBool;
 
     /// Accumulates each time ASW it activated where the app was forced in and out of half-rate rendering
-    AswActivatedToggleCount: i32,
+    AswActivatedToggleCount: i32;
 
     /// Accumulates the number of frames presented by the compositor which had extrapolated ASW frames presented
-    AswPresentedFrameCount: i32,
+    AswPresentedFrameCount: i32;
 
     /// Accumulates the number of frames that the compositor tried to present when ASW is active but failed
-    AswFailedFrameCount: i32,
+    AswFailedFrameCount: i32;
 
 };
 
@@ -2228,13 +2228,13 @@ ovrPerfStats :: struct #ordered #align 4 {
     ///
     /// The performance entries will be ordered in reverse chronological order such that the
     /// first entry will be the most recent one.
-    FrameStats: [ovrMaxProvidedFrameStats]ovrPerfStatsPerCompositorFrame,
-    FrameStatsCount: i32,
+    FrameStats: [ovrMaxProvidedFrameStats]ovrPerfStatsPerCompositorFrame;
+    FrameStatsCount: i32;
 
     /// If the app calls ovr_SubmitFrame at a rate less than 18 fps, then when calling
     /// ovr_GetPerfStats, expect AnyFrameStatsDropped to become ovrTrue while FrameStatsCount
     /// is equal to ovrMaxProvidedFrameStats.
-    AnyFrameStatsDropped: ovrBool,
+    AnyFrameStatsDropped: ovrBool;
 
     /// AdaptiveGpuPerformanceScale is an edge-filtered value that a caller can use to adjust
     /// the graphics quality of the application to keep the GPU utilization in check. The value
@@ -2248,11 +2248,11 @@ ovrPerfStats :: struct #ordered #align 4 {
     /// Since AdaptiveGpuPerformanceScale is edge-filtered and does not change rapidly
     /// (i.e. reports non-1.0 values once every couple of seconds) the app can make the
     /// necessary adjustments and then keep watching the value to see if it has been satisfied.
-    AdaptiveGpuPerformanceScale: f32,
+    AdaptiveGpuPerformanceScale: f32;
 
     /// Will be true if Async Spacewarp (ASW) is available for this system which is dependent on
     /// several factors such as choice of GPU, OS and debug overrides
-    AswIsAvailable: ovrBool,
+    AswIsAvailable: ovrBool;
 };
 
 /// Retrieves performance stats for the VR app as well as the SDK compositor.
@@ -2271,7 +2271,7 @@ ovrPerfStats :: struct #ordered #align 4 {
 /// \see ovrPerfStats, ovrPerfStatsPerCompositorFrame, ovr_ResetPerfStats
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_GetPerfStats(ovrSession session, ovrPerfStats* outStats);
-ovr_GetPerfStats :: proc(session: ovrSession, outStats: ^ovrPerfStats) -> ovrResult #foreign ovr "ovr_GetPerfStats";
+foreign ovr ovr_GetPerfStats :: proc(session: ovrSession, outStats: ^ovrPerfStats) -> ovrResult ---;
 
 /// Resets the accumulated stats reported in each ovrPerfStatsPerCompositorFrame back to zero.
 ///
@@ -2286,7 +2286,7 @@ ovr_GetPerfStats :: proc(session: ovrSession, outStats: ^ovrPerfStats) -> ovrRes
 /// \see ovrPerfStats, ovrPerfStatsPerCompositorFrame, ovr_GetPerfStats
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_ResetPerfStats(ovrSession session);
-ovr_ResetPerfStats :: proc(session: ovrSession) -> ovrResult #foreign ovr "ovr_ResetPerfStats";
+foreign ovr ovr_ResetPerfStats :: proc(session: ovrSession) -> ovrResult ---;
 
 /// Gets the time of the specified frame midpoint.
 ///
@@ -2311,7 +2311,7 @@ ovr_ResetPerfStats :: proc(session: ovrSession) -> ovrResult #foreign ovr "ovr_R
 /// \see ovr_GetTimeInSeconds
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(double) ovr_GetPredictedDisplayTime(ovrSession session, long long frameIndex);
-ovr_GetPredictedDisplayTime :: proc(session: ovrSession, frameIndex: i64) -> f64 #foreign ovr "ovr_GetPredictedDisplayTime";
+foreign ovr ovr_GetPredictedDisplayTime :: proc(session: ovrSession, frameIndex: i64) -> f64 ---;
 
 /// Returns global, absolute high-resolution time in seconds.
 ///
@@ -2322,7 +2322,7 @@ ovr_GetPredictedDisplayTime :: proc(session: ovrSession, frameIndex: i64) -> f64
 /// \see ovrPoseStatef, ovrFrameTiming
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(double) ovr_GetTimeInSeconds();
-ovr_GetTimeInSeconds :: proc() -> f64 #foreign ovr "ovr_GetTimeInSeconds";
+foreign ovr ovr_GetTimeInSeconds :: proc() -> f64 ---;
 
 
 /// Performance HUD enables the HMD user to see information critical to
@@ -2405,7 +2405,7 @@ ovrDebugHudStereoMode :: enum i32 {
 /// \return Returns the property interpreted as a boolean value. Returns defaultVal if
 ///         the property doesn't exist.
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrBool) ovr_GetBool(ovrSession session, const char* propertyName, ovrBool defaultVal);
-ovr_GetBool :: proc(session: ovrSession, propertyName: ^byte, defaultVal: ovrBool) -> ovrBool #foreign ovr "ovr_GetBool"; // @WARNING: const char* to ^byte
+foreign ovr ovr_GetBool :: proc(session: ovrSession, propertyName: ^u8, defaultVal: ovrBool) -> ovrBool ---; // @WARNING: const char* to ^u8
 
 /// Writes or creates a boolean property.
 /// If the property wasn't previously a boolean property, it is changed to a boolean property.
@@ -2416,7 +2416,7 @@ ovr_GetBool :: proc(session: ovrSession, propertyName: ^byte, defaultVal: ovrBoo
 /// \return Returns true if successful, otherwise false. A false result should only occur if the property
 ///         name is empty or if the property is read-only.
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrBool) ovr_SetBool(ovrSession session, const char* propertyName, ovrBool value);
-ovr_SetBool :: proc(session: ovrSession, propertyName: ^byte, value: ovrBool) -> ovrBool #foreign ovr "ovr_SetBool"; // @WARNING: const char* to ^byte
+foreign ovr ovr_SetBool :: proc(session: ovrSession, propertyName: ^u8, value: ovrBool) -> ovrBool ---; // @WARNING: const char* to ^u8
 
 
 /// Reads an integer property.
@@ -2427,7 +2427,7 @@ ovr_SetBool :: proc(session: ovrSession, propertyName: ^byte, value: ovrBool) ->
 /// \return Returns the property interpreted as an integer value. Returns defaultVal if
 ///         the property doesn't exist.
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(int) ovr_GetInt(ovrSession session, const char* propertyName, int defaultVal);
-ovr_GetInt :: proc(session: ovrSession, propertyName: ^byte, defaultVal: i32) -> i32 #foreign ovr "ovr_GetInt";
+foreign ovr ovr_GetInt :: proc(session: ovrSession, propertyName: ^u8, defaultVal: i32) -> i32 ---;
 
 /// Writes or creates an integer property.
 ///
@@ -2439,7 +2439,7 @@ ovr_GetInt :: proc(session: ovrSession, propertyName: ^byte, defaultVal: i32) ->
 /// \return Returns true if successful, otherwise false. A false result should only occur if the property
 ///         name is empty or if the property is read-only.
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrBool) ovr_SetInt(ovrSession session, const char* propertyName, int value);
-ovr_SetInt :: proc(session: ovrSession, propertyName: ^byte, value: i32) -> ovrBool #foreign ovr "ovr_SetInt";
+foreign ovr ovr_SetInt :: proc(session: ovrSession, propertyName: ^u8, value: i32) -> ovrBool ---;
 
 
 /// Reads a float property.
@@ -2450,7 +2450,7 @@ ovr_SetInt :: proc(session: ovrSession, propertyName: ^byte, value: i32) -> ovrB
 /// \return Returns the property interpreted as an float value. Returns defaultVal if
 ///         the property doesn't exist.
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(float) ovr_GetFloat(ovrSession session, const char* propertyName, float defaultVal);
-ovr_GetFloat :: proc(session: ovrSession, propertyName: ^byte, defaultVal: f32) -> f32 #foreign ovr "ovr_GetFloat";
+foreign ovr ovr_GetFloat :: proc(session: ovrSession, propertyName: ^u8, defaultVal: f32) -> f32 ---;
 
 /// Writes or creates a float property.
 /// If the property wasn't previously a float property, it's changed to a float property.
@@ -2461,7 +2461,7 @@ ovr_GetFloat :: proc(session: ovrSession, propertyName: ^byte, defaultVal: f32) 
 /// \return Returns true if successful, otherwise false. A false result should only occur if the property
 ///         name is empty or if the property is read-only.
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrBool) ovr_SetFloat(ovrSession session, const char* propertyName, float value);
-ovr_SetFloat :: proc(session: ovrSession, propertyName: ^byte, value: f32) -> ovrBool #foreign ovr "ovr_SetFloat";
+foreign ovr ovr_SetFloat :: proc(session: ovrSession, propertyName: ^u8, value: f32) -> ovrBool ---;
 
 
 /// Reads a float array property.
@@ -2473,7 +2473,7 @@ ovr_SetFloat :: proc(session: ovrSession, propertyName: ^byte, value: f32) -> ov
 /// \return Returns the number of elements read, or 0 if property doesn't exist or is empty.
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(unsigned int) ovr_GetFloatArray(ovrSession session, const char* propertyName,
 //                                                                float values[], unsigned int valuesCapacity);
-ovr_GetFloatArray :: proc(session: ovrSession, propertyName: ^byte, values: ^f32, valuesCapacity: u32) -> u32 #foreign ovr "ovr_GetFloatArray"; // @WARNING: float[] to ^f32
+foreign ovr ovr_GetFloatArray :: proc(session: ovrSession, propertyName: ^u8, values: ^f32, valuesCapacity: u32) -> u32 ---; // @WARNING: float[] to ^f32
 
 /// Writes or creates a float array property.
 ///
@@ -2485,7 +2485,7 @@ ovr_GetFloatArray :: proc(session: ovrSession, propertyName: ^byte, values: ^f32
 ///         name is empty or if the property is read-only.
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrBool) ovr_SetFloatArray(ovrSession session, const char* propertyName,
 //                                                           const float values[], unsigned int valuesSize);
-ovr_SetFloatArray :: proc(session: ovrSession, propertyName: ^byte, values: ^f32, valuesSize: u32) -> ovrBool #foreign ovr "ovr_SetFloatArray"; // @WARNING: const float[] to ^f32
+foreign ovr ovr_SetFloatArray :: proc(session: ovrSession, propertyName: ^u8, values: ^f32, valuesSize: u32) -> ovrBool ---; // @WARNING: const float[] to ^f32
 
 
 /// Reads a string property.
@@ -2499,7 +2499,7 @@ ovr_SetFloatArray :: proc(session: ovrSession, propertyName: ^byte, values: ^f32
 ///         until the session is destroyed, whichever occurs first.
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(const char*) ovr_GetString(ovrSession session, const char* propertyName,
 //                                                           const char* defaultVal);
-ovr_GetString :: proc(session: ovrSession, propertyName: ^byte, defaultVal: ^byte) -> ^byte #foreign ovr "ovr_GetString"; // @WARNING: const char to ^byte
+foreign ovr ovr_GetString :: proc(session: ovrSession, propertyName: ^u8, defaultVal: ^u8) -> ^u8 ---; // @WARNING: const char to ^u8
 
 /// Writes or creates a string property.
 /// Strings are UTF8-encoded and null-terminated.
@@ -2511,7 +2511,7 @@ ovr_GetString :: proc(session: ovrSession, propertyName: ^byte, defaultVal: ^byt
 ///         name is empty or if the property is read-only.
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrBool) ovr_SetString(ovrSession session, const char* propertyName,
 //                                                       const char* value);
-ovr_SetString :: proc(session: ovrSession, propertyName: ^byte, value: ^byte) -> ovrBool #foreign ovr "ovr_SetString"; // @WARNING: const char to ^byte
+foreign ovr ovr_SetString :: proc(session: ovrSession, propertyName: ^u8, value: ^u8) -> ovrBool ---; // @WARNING: const char to ^u8
 
 ///@}
 
@@ -2582,15 +2582,15 @@ ovrDetectResult :: struct #ordered #align 8 {
     /// Is ovrTrue when the Oculus Service is running.
     ///   This means that the Oculus Service is installed and running.
     ///   IsOculusHMDConnected will reflect the state of the HMD.
-    IsOculusServiceRunning: ovrBool,
+    IsOculusServiceRunning: ovrBool;
 
     /// Is ovrFalse when an Oculus HMD is not detected.
     ///   If the Oculus Service is not running, this will be ovrFalse.
     /// Is ovrTrue when an Oculus HMD is detected.
     ///   This implies that the Oculus Service is also installed and running.
-    IsOculusHMDConnected: ovrBool,
+    IsOculusHMDConnected: ovrBool;
 
-    pad0: [6]i8,  ///< \internal struct padding
+    pad0: [6]i8;  ///< \internal struct padding
 
 };
 
@@ -2610,20 +2610,20 @@ ovrHapticsGenMode :: enum i32 {
 ///
 ovrAudioChannelData :: struct #ordered {
     /// Samples stored as floats [-1.0f, 1.0f].
-    Samples: ^f32, // const float*
+    Samples: ^f32; // const float*
     /// Number of samples
-    SamplesCount: i32,
+    SamplesCount: i32;
     /// Frequency (e.g. 44100)
-    Frequency: i32,
+    Frequency: i32;
 };
 
 /// Store a full Haptics clip, which can be used as data source for multiple ovrHapticsBuffers.
 ///
 ovrHapticsClip :: struct #ordered {
     /// Samples stored in opaque format
-    Samples: rawptr, // @WARNING: const void*
+    Samples: rawptr; // @WARNING: const void*
     /// Number of samples
-    SamplesCount: i32,
+    SamplesCount: i32;
 };
 
 
@@ -2640,7 +2640,7 @@ ovrHapticsClip :: struct #ordered {
 /// \see ovrDetectResult
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrDetectResult) ovr_Detect(int timeoutMilliseconds);
-ovr_Detect :: proc(timeoutMilliseconds: i32) -> ovrDetectResult #foreign ovr "ovr_Detect";
+foreign ovr ovr_Detect :: proc(timeoutMilliseconds: i32) -> ovrDetectResult ---;
 
 // On the Windows platform,
 //#ifdef _WIN32
@@ -2662,7 +2662,7 @@ OVR_HMD_CONNECTED_EVENT_NAME :: "OculusHMDConnected\x00";
 /// \see ovrProjectionModifier
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrMatrix4f) ovrMatrix4f_Projection(ovrFovPort fov, float znear, float zfar, unsigned int projectionModFlags);
-ovrMatrix4f_Projection :: proc(fov: ovrFovPort, znear, zfar: f32, projectionModFlags: u32) -> ovrMatrix4f #foreign ovr "ovrMatrix4f_Projection";
+foreign ovr ovrMatrix4f_Projection :: proc(fov: ovrFovPort, znear, zfar: f32, projectionModFlags: u32) -> ovrMatrix4f ---;
 
 /// Extracts the required data from the result of ovrMatrix4f_Projection.
 ///
@@ -2672,7 +2672,7 @@ ovrMatrix4f_Projection :: proc(fov: ovrFovPort, znear, zfar: f32, projectionModF
 /// \see ovrTimewarpProjectionDesc
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrTimewarpProjectionDesc) ovrTimewarpProjectionDesc_FromProjection(ovrMatrix4f projection, unsigned int projectionModFlags);
-ovrTimewarpProjectionDesc_FromProjection :: proc(projection: ovrMatrix4f, projectionModFlags: u32) -> ovrTimewarpProjectionDesc #foreign ovr "ovrTimewarpProjectionDesc_FromProjection";
+foreign ovr ovrTimewarpProjectionDesc_FromProjection :: proc(projection: ovrMatrix4f, projectionModFlags: u32) -> ovrTimewarpProjectionDesc ---;
 
 /// Generates an orthographic sub-projection.
 ///
@@ -2687,7 +2687,7 @@ ovrTimewarpProjectionDesc_FromProjection :: proc(projection: ovrMatrix4f, projec
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrMatrix4f) ovrMatrix4f_OrthoSubProjection(ovrMatrix4f projection, ovrVector2f orthoScale,
 //                                                                            float orthoDistance, float HmdToEyeOffsetX);
-ovrMatrix4f_OrthoSubProjection :: proc(projection: ovrMatrix4f, orthoScale: ovrVector2f, orthoDistance: f32, HmdToEyeOffsetX: f32) -> ovrMatrix4f #foreign ovr "ovrMatrix4f_OrthoSubProjection";
+foreign ovr ovrMatrix4f_OrthoSubProjection :: proc(projection: ovrMatrix4f, orthoScale: ovrVector2f, orthoDistance: f32, HmdToEyeOffsetX: f32) -> ovrMatrix4f ---;
 
 
 /// Computes offset eye poses based on headPose returned by ovrTrackingState.
@@ -2702,8 +2702,8 @@ ovrMatrix4f_OrthoSubProjection :: proc(projection: ovrMatrix4f, orthoScale: ovrV
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(void) ovr_CalcEyePoses(ovrPosef headPose,
 //                                                       const ovrVector3f hmdToEyeOffset[2], // @WARNING: const
 //                                                       ovrPosef outEyePoses[2]);
-// ovr_CalcEyePoses :: proc(headPose: ovrPosef, hmdToEyeOffset: [2]ovrVector3f, outEyePoses: [2]ovrPosef) #foreign ovr "ovr_CalcEyePoses"; // @WARNING: need to send pointers
-ovr_CalcEyePoses :: proc(headPose: ovrPosef, hmdToEyeOffset: ^ovrVector3f, outEyePoses: ^ovrPosef) #foreign ovr "ovr_CalcEyePoses";
+// foreign ovr ovr_CalcEyePoses :: proc(headPose: ovrPosef, hmdToEyeOffset: [2]ovrVector3f, outEyePoses: [2]ovrPosef) ---; // @WARNING: need to send pointers
+foreign ovr ovr_CalcEyePoses :: proc(headPose: ovrPosef, hmdToEyeOffset: ^ovrVector3f, outEyePoses: ^ovrPosef) ---;
 
 /// Returns the predicted head pose in outHmdTrackingState and offset eye poses in outEyePoses.
 ///
@@ -2728,12 +2728,12 @@ ovr_CalcEyePoses :: proc(headPose: ovrPosef, hmdToEyeOffset: ^ovrVector3f, outEy
 //                                                      const ovrVector3f hmdToEyeOffset[2],
 //                                                      ovrPosef outEyePoses[2],
 //                                                      double* outSensorSampleTime);
-//ovr_GetEyePoses :: proc(session: ovrSession, frameIndex: i64, latencyMarker: ovrBool, hmdToEyeOffset: [2]ovrVector3f, outEyePoses: [2]ovrPosef, outSensorSampleTime: ^f64) #foreign ovr "ovr_GetEyePoses";
-ovr_GetEyePoses :: proc(session: ovrSession, frameIndex: i64, 
+//foreign ovr ovr_GetEyePoses :: proc(session: ovrSession, frameIndex: i64, latencyMarker: ovrBool, hmdToEyeOffset: [2]ovrVector3f, outEyePoses: [2]ovrPosef, outSensorSampleTime: ^f64) ---;
+foreign ovr ovr_GetEyePoses :: proc(session: ovrSession, frameIndex: i64, 
                         latencyMarker: ovrBool, 
                         hmdToEyeOffset: ^ovrVector3f, 
                         outEyePoses: ^ovrPosef,  // @WARNING!
-                        outSensorSampleTime: ^f64) #foreign ovr "ovr_GetEyePoses";
+                        outSensorSampleTime: ^f64) ---;
 
 
 /// Tracking poses provided by the SDK come in a right-handed coordinate system. If an application
@@ -2748,7 +2748,7 @@ ovr_GetEyePoses :: proc(session: ovrSession, frameIndex: i64,
 /// \param[out] outPose that is requested to be left-handed (can be the same pointer to inPose)
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(void) ovrPosef_FlipHandedness(const ovrPosef* inPose, ovrPosef* outPose);
-ovrPosef_FlipHandedness :: proc(inPose: ^ovrPosef, outPose: ^ovrPosef) #foreign ovr "ovrPosef_FlipHandedness";
+foreign ovr ovrPosef_FlipHandedness :: proc(inPose: ^ovrPosef, outPose: ^ovrPosef) ---;
 
 /// Reads an audio channel from Wav (Waveform Audio File) data.
 /// Input must be a byte buffer representing a valid Wav file. Audio samples from the specified channel are read,
@@ -2762,7 +2762,7 @@ ovrPosef_FlipHandedness :: proc(inPose: ^ovrPosef, outPose: ^ovrPosef) #foreign 
 /// \param[in] stereoChannelToUse audio channel index to extract (0 for mono).
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_ReadWavFromBuffer(ovrAudioChannelData* outAudioChannel, const void* inputData, int dataSizeInBytes, int stereoChannelToUse);
-ovr_ReadWavFromBuffer :: proc(outAudioChannel: ^ovrAudioChannelData, inputData: rawptr, dataSizeInBytes: i32, stereoChannelToUse: i32) -> ovrResult #foreign ovr "ovr_ReadWavFromBuffer";
+foreign ovr ovr_ReadWavFromBuffer :: proc(outAudioChannel: ^ovrAudioChannelData, inputData: rawptr, dataSizeInBytes: i32, stereoChannelToUse: i32) -> ovrResult ---;
 
 /// Generates playable Touch Haptics data from an audio channel.
 ///
@@ -2771,19 +2771,19 @@ ovr_ReadWavFromBuffer :: proc(outAudioChannel: ^ovrAudioChannelData, inputData: 
 /// \param[in] genMode mode used to convert and audio channel data to Haptics data.
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_GenHapticsFromAudioData(ovrHapticsClip* outHapticsClip, const ovrAudioChannelData* audioChannel, ovrHapticsGenMode genMode);
-ovr_GenHapticsFromAudioData :: proc(outHapticsClip: ^ovrHapticsClip, audioChannel: ^ovrAudioChannelData, genMode: ovrHapticsGenMode) -> ovrResult #foreign ovr "ovr_GenHapticsFromAudioData";
+foreign ovr ovr_GenHapticsFromAudioData :: proc(outHapticsClip: ^ovrHapticsClip, audioChannel: ^ovrAudioChannelData, genMode: ovrHapticsGenMode) -> ovrResult ---;
 
 /// Releases memory allocated for ovrAudioChannelData. Must be called to avoid memory leak.
 /// \param[in] audioChannel pointer to an audio channel
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(void) ovr_ReleaseAudioChannelData(ovrAudioChannelData* audioChannel);
-ovr_ReleaseAudioChannelData :: proc(audioChannel: ^ovrAudioChannelData) #foreign ovr "ovr_ReleaseAudioChannelData";
+foreign ovr ovr_ReleaseAudioChannelData :: proc(audioChannel: ^ovrAudioChannelData) ---;
 
 /// Releases memory allocated for ovrHapticsClip. Must be called to avoid memory leak.
 /// \param[in] hapticsClip pointer to a haptics clip
 ///
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(void) ovr_ReleaseHapticsClip(ovrHapticsClip* hapticsClip);
-ovr_ReleaseHapticsClip :: proc(hapticsClip: ^ovrHapticsClip) #foreign ovr "ovr_ReleaseHapticsClip";
+foreign ovr ovr_ReleaseHapticsClip :: proc(hapticsClip: ^ovrHapticsClip) ---;
 
 
 
@@ -2829,7 +2829,7 @@ ovr_ReleaseHapticsClip :: proc(hapticsClip: ^ovrHapticsClip) #foreign ovr "ovr_R
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_CreateTextureSwapChainGL(ovrSession session,
 //                                                                        const ovrTextureSwapChainDesc* desc,
 //                                                                        ovrTextureSwapChain* out_TextureSwapChain);
-ovr_CreateTextureSwapChainGL :: proc(session: ovrSession, desc: ^ovrTextureSwapChainDesc, out_TextureSwapChain: ^ovrTextureSwapChain) -> ovrResult #foreign ovr "ovr_CreateTextureSwapChainGL";
+foreign ovr ovr_CreateTextureSwapChainGL :: proc(session: ovrSession, desc: ^ovrTextureSwapChainDesc, out_TextureSwapChain: ^ovrTextureSwapChain) -> ovrResult ---;
 
 
 /// Get a specific buffer within the chain as a GL texture name
@@ -2847,7 +2847,7 @@ ovr_CreateTextureSwapChainGL :: proc(session: ovrSession, desc: ^ovrTextureSwapC
 //                                                                           ovrTextureSwapChain chain,
 //                                                                           int index,
 //                                                                           unsigned int* out_TexId);
-ovr_GetTextureSwapChainBufferGL :: proc(session: ovrSession, chain: ovrTextureSwapChain, index: i32, out_TexId: ^u32) -> ovrResult #foreign ovr "ovr_GetTextureSwapChainBufferGL";
+foreign ovr ovr_GetTextureSwapChainBufferGL :: proc(session: ovrSession, chain: ovrTextureSwapChain, index: i32, out_TexId: ^u32) -> ovrResult ---;
 
 /// Creates a Mirror Texture which is auto-refreshed to mirror Rift contents produced by this application.
 ///
@@ -2874,7 +2874,7 @@ ovr_GetTextureSwapChainBufferGL :: proc(session: ovrSession, chain: ovrTextureSw
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_CreateMirrorTextureGL(ovrSession session,
 //                                                                     const ovrMirrorTextureDesc* desc,
 //                                                                     ovrMirrorTexture* out_MirrorTexture);
-ovr_CreateMirrorTextureGL :: proc(session: ovrSession, desc: ^ovrMirrorTextureDesc, out_MirrorTexture: ^ovrMirrorTexture) -> ovrResult #foreign ovr "ovr_CreateMirrorTextureGL";
+foreign ovr ovr_CreateMirrorTextureGL :: proc(session: ovrSession, desc: ^ovrMirrorTextureDesc, out_MirrorTexture: ^ovrMirrorTexture) -> ovrResult ---;
 
 /// Get a the underlying buffer as a GL texture name
 ///
@@ -2888,5 +2888,5 @@ ovr_CreateMirrorTextureGL :: proc(session: ovrSession, desc: ^ovrMirrorTextureDe
 // @ORIGINAL: OVR_PUBLIC_FUNCTION(ovrResult) ovr_GetMirrorTextureBufferGL(ovrSession session,
 //                                                                        ovrMirrorTexture mirrorTexture,
 //                                                                        unsigned int* out_TexId);
-ovr_GetMirrorTextureBufferGL :: proc(session: ovrSession, mirrorTexture: ovrMirrorTexture, out_TexId: ^u32) -> ovrResult #foreign ovr "ovr_GetMirrorTextureBufferGL";
+foreign ovr ovr_GetMirrorTextureBufferGL :: proc(session: ovrSession, mirrorTexture: ovrMirrorTexture, out_TexId: ^u32) -> ovrResult ---;
 

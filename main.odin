@@ -23,18 +23,53 @@
 //  
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#import "strings.odin";
-#import "math.odin";
-#import "fmt.odin";
-#import "os.odin";
+import (
+   "strings.odin";
+   "math.odin";
+   "fmt.odin";
+   "os.odin";
 
-#import "glfw.odin";
-#import "gl.odin";
+   "glfw.odin";
+   "gl.odin";
 
-#import "rift.odin";
+   "rift.odin";
+   "utils.odin";
+)
 
+vec2 :: struct {
+    x, y: f32;
+};
 
+vec3 :: struct {
+    x, y, z: f32;
+};
 
+qmul :: proc(q1, q2: rift.ovrQuatf) -> rift.ovrQuatf {
+    q: rift.ovrQuatf;
+    q.x = (q1.w * q2.x) + (q1.x * q2.w) + (q1.y * q2.z) - (q1.z * q2.y);
+    q.y = (q1.w * q2.y) - (q1.x * q2.z) + (q1.y * q2.w) + (q1.z * q2.x);
+    q.z = (q1.w * q2.z) + (q1.x * q2.y) - (q1.y * q2.x) + (q1.z * q2.w);
+    q.w = (q1.w * q2.w) - (q1.x * q2.x) - (q1.y * q2.y) - (q1.z * q2.z);
+    return q;
+}
+
+get_uniform_location :: proc(program: u32, name: string) -> i32 {
+    return gl.GetUniformLocation(program, &name[0]);
+}
+
+draw_model :: proc(program: u32, vao: u32, texture: u32, num_vertices: u32, d, p: rift.ovrVector3f, q: rift.ovrQuatf) {
+    gl.UseProgram(program);
+    gl.BindVertexArray(vao);
+
+    gl.BindTexture(gl.TEXTURE_2D, texture);
+    gl.Uniform1i(get_uniform_location(program, "apply_texture\x00"), texture != 0 ? 1 : 0);
+    
+    gl.Uniform3f(get_uniform_location(program, "d_model\x00"), d.x, d.y, d.z);
+    gl.Uniform3f(get_uniform_location(program, "p_model\x00"), p.x, p.y, p.z);
+    gl.Uniform4f(get_uniform_location(program, "q_model\x00"), q.x, q.y, q.z, q.w);
+
+    gl.DrawArrays(gl.TRIANGLES, 0, i32(num_vertices));
+}
 
 main :: proc() {
     using rift;
@@ -69,12 +104,11 @@ main :: proc() {
     defer glfw.Terminate();
     fmt.fprintln(os.stderr, "Succeeded initializing GLFW");
 
-
     glfw.WindowHint(glfw.SAMPLES, 4);    // samples, for antialiasing
 
     title := "Rift minimal example (Odin)\x00";
     resx, resy : i32 = 1600, 900;
-    window := glfw.CreateWindow(resx, resy, ^byte(&title[0]), nil, nil);
+    window := glfw.CreateWindow(resx, resy, &title[0], nil, nil);
     if window == nil {
         return;
     }
@@ -84,7 +118,10 @@ main :: proc() {
     glfw.SwapInterval(0);
 
     // Load OpenGL function pointers using glfw.GetProcAddress
-    gl.init( proc(p: rawptr, name: string) { (^(proc() #cc_c))(p)^ = glfw.GetProcAddress(&name[0]); } );
+    set_proc_address :: proc(p: rawptr, name: string) { 
+        (cast(^rawptr)p)^ = rawptr(glfw.GetProcAddress(&name[0]));
+    }
+    gl.load_up_to(3, 3, set_proc_address);
     fmt.fprintln(os.stderr, "Loaded OpenGL function pointers");
 
     //-------------------------------------------------------------------------------------------//
@@ -100,7 +137,7 @@ main :: proc() {
     eye_texture_sizes: [2]ovrSizei;
     texture_swap_chains: [2]ovrTextureSwapChain;
 
-    for eye in 0..1 {
+    for eye in 0...1 {
         eye_texture_sizes[eye] = ovr_GetFovTextureSize(session, ovrEyeType(eye), hmd_desc.MaxEyeFov[eye], 1.0);
 
         desc := ovrTextureSwapChainDesc{
@@ -122,7 +159,7 @@ main :: proc() {
 
         length: i32;
         ovr_GetTextureSwapChainLength(session, texture_swap_chains[eye], &length);
-        for i in 0..<length {
+        for i in 0..length {
             chain_tex_id: u32;
             if (!OVR_SUCCESS(ovr_GetTextureSwapChainBufferGL(session, texture_swap_chains[eye], i, &chain_tex_id))) {
                 print_last_rift_error();
@@ -139,7 +176,7 @@ main :: proc() {
     defer ovr_DestroyTextureSwapChain(session, texture_swap_chains[0]);
     defer ovr_DestroyTextureSwapChain(session, texture_swap_chains[1]);
     fmt.fprintln(os.stderr, "Created texture swap chains for both eyes");
-    
+
     //-------------------------------------------------------------------------------------------//
 
     // Set up a "mirror texture" that is used to mirror what's rendered in the headset to the default framebuffer
@@ -191,7 +228,7 @@ main :: proc() {
     gl.GenTextures(2, &depth_textures[0]);
     defer gl.DeleteTextures(2, &depth_textures[0]);
 
-    for eye in 0..1 {
+    for eye in 0...1 {
         gl.BindTexture(gl.TEXTURE_2D, depth_textures[eye]);
 
         gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -202,7 +239,7 @@ main :: proc() {
         gl.TexImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, eye_texture_sizes[eye].w, eye_texture_sizes[eye].h, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, nil);
     }
     fmt.fprintln(os.stderr, "Created per-eye depth buffers");
-    
+
     //-------------------------------------------------------------------------------------------//
     // See: https://developer.oculus.com/documentation/pcsdk/latest/concepts/dg-render/#dg-render-layers
 
@@ -269,79 +306,69 @@ main :: proc() {
     defer gl.DeleteProgram(program);
 
 
+    //model_left, status := utils.read_obj("Oculus_Left.obj");
+    //if true do return;
+    
+    fmt.println("asdasdasd");
+    //v2, n2, u2 := utils.read_obj("oculus_cv1_controller_right.obj");
+
+    //num_vertices_controllers: [2]u32 = [2]u32{u32(len(v1)), u32(len(v2))};
+
     // Setup "controller" vao, vbo and vertex attribs, and upload
-    vao_controller: u32;
-    gl.GenVertexArrays(1, &vao_controller);
+    vao_controllers: [2]u32;
+    gl.GenVertexArrays(2, &vao_controllers[0]);
 
-    num_vertices_controller: i32 = 12;
-    pos_data_controller := [..]f32{
-       -1.0*0.1, -1.0*0.1, 0.0,
-       -0.1*0.1, -1.0*0.1, 0.0,
-       -1.0*0.1,  1.0*0.1, 0.0,
+    vbo_controller_pos: [2]u32;
+    gl.GenBuffers(2, &vbo_controller_pos[0]);
+    
+    vbo_controller_uv: [2]u32;
+    gl.GenBuffers(2, &vbo_controller_uv[0]);
 
-       -1.0*0.1,  1.0*0.1, 0.0,
-       -0.1*0.1, -1.0*0.1, 0.0,
-       -0.1*0.1,  1.0*0.1, 0.0,
 
-        0.1*0.1, -1.0*0.1, 0.0,
-        1.0*0.1, -1.0*0.1, 0.0,
-        0.1*0.1,  1.0*0.1, 0.0,
+    
+    gl.BindVertexArray(vao_controllers[0]);
 
-        0.1*0.1,  1.0*0.1, 0.0,
-        1.0*0.1, -1.0*0.1, 0.0,
-        1.0*0.1,  1.0*0.1, 0.0,
-    };
-
-    uv_data_controller := [..]f32{
-        0.0, 0.0, 
-        0.5, 0.0, 
-        0.0, 1.0, 
-        
-        0.0, 1.0,
-        0.5, 0.0,
-        0.5, 1.0,
-        
-        0.5, 0.0,
-        1.0, 0.0,
-        0.5, 1.0,
-        
-        0.5, 1.0,
-        1.0, 0.0,
-        1.0, 1.0,
-    };
-
-    gl.BindVertexArray(vao_controller);
-
-    vbo_controller_pos: u32;
-    gl.GenBuffers(1, &vbo_controller_pos);
-    gl.BindBuffer(gl.ARRAY_BUFFER, vbo_controller_pos);
-    gl.BufferData(gl.ARRAY_BUFFER, size_of_val(pos_data_controller), &pos_data_controller[0], gl.STATIC_DRAW);
+    gl.BindBuffer(gl.ARRAY_BUFFER, vbo_controller_pos[0]);
+    //gl.BufferData(gl.ARRAY_BUFFER, size_of(v1[0])*len(v1), &v1[0], gl.STATIC_DRAW);
     
     gl.EnableVertexAttribArray(0);
     gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 0, nil);
 
-
-    vbo_controller_uv: u32;
-    gl.GenBuffers(1, &vbo_controller_uv);
-    gl.BindBuffer(gl.ARRAY_BUFFER, vbo_controller_uv);
-    gl.BufferData(gl.ARRAY_BUFFER, size_of_val(uv_data_controller), &uv_data_controller[0], gl.STATIC_DRAW);
+    gl.BindBuffer(gl.ARRAY_BUFFER, vbo_controller_uv[0]);
+    //gl.BufferData(gl.ARRAY_BUFFER, size_of(u1[0])*len(u1), &u1[0], gl.STATIC_DRAW);
 
     gl.EnableVertexAttribArray(2);
     gl.VertexAttribPointer(2, 2, gl.FLOAT, gl.FALSE, 0, nil);
 
+
+    gl.BindVertexArray(vao_controllers[1]);
+
+    gl.BindBuffer(gl.ARRAY_BUFFER, vbo_controller_pos[1]);
+    //gl.BufferData(gl.ARRAY_BUFFER, size_of(v2[0])*len(v2), &v2[0], gl.STATIC_DRAW);
+    
+    gl.EnableVertexAttribArray(0);
+    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 0, nil);
+
+    gl.BindBuffer(gl.ARRAY_BUFFER, vbo_controller_uv[1]);
+    //gl.BufferData(gl.ARRAY_BUFFER, size_of(u2[0])*len(u2), &u2[0], gl.STATIC_DRAW);
+
+    gl.EnableVertexAttribArray(2);
+    gl.VertexAttribPointer(2, 2, gl.FLOAT, gl.FALSE, 0, nil);
+
+
     // gl.DisableVertexAttribArray(1);
 
     defer {
-        gl.DeleteBuffers(1, &vbo_controller_uv);
-        gl.DeleteBuffers(1, &vbo_controller_pos);
-        gl.DeleteVertexArrays(1, &vao_controller);
+        gl.DeleteBuffers(2, &vbo_controller_uv[0]);
+        gl.DeleteBuffers(2, &vbo_controller_pos[0]);
+        gl.DeleteVertexArrays(2, &vao_controllers[0]);
     }
 
 
     // Setup "controller" texture and upload
     texture_width: i32 = 4;
     texture_height: i32 = 4;
-    texture_data := [..]u8 {
+    texture_data := [...]u8 {
         255, 152,   0, // orange
         156,  39, 176, // purple
           3, 169, 244, // light blue
@@ -375,7 +402,7 @@ main :: proc() {
     gl.TexImage2D(gl.TEXTURE_2D, 0, gl.SRGB, texture_width, texture_height, 0, gl.RGB, gl.UNSIGNED_BYTE, &texture_data[0]);
 
     gl.UseProgram(program);
-    gl.Uniform1i(gl.get_uniform_location(program, "texture_sampler\x00"), 0);
+    gl.Uniform1i(get_uniform_location(program, "texture_sampler\x00"), 0);
 
     defer {
         gl.DeleteTextures(1, &texture_controller);
@@ -394,13 +421,7 @@ main :: proc() {
     floor_height: f32 = -2.0; // @TODO: use actual floor/sitting height instead of 2 meters..
     roof_height: f32 = 3.0;
     
-    vec2 :: struct {
-        x, y: f32,
-    };
 
-    vec3 :: struct {
-        x, y, z: f32,
-    };
 
     cubeVertices:= [8*3]vec3 {
         vec3{-half_side,  roof_height,  -half_side},
@@ -446,7 +467,7 @@ main :: proc() {
     normal_data_room: [num_vertices_room]vec3;
     uv_data_room:     [num_vertices_room]vec2;
 
-    for i in 0..<num_triangles_room {
+    for i in 0..num_triangles_room {
 
         pos_data_room[3*i+0] = cubeVertices[cubeIndices[i + 0 + (i % 2)]];;
         pos_data_room[3*i+1] = cubeVertices[cubeIndices[i + 1 - (i % 2)]];;
@@ -475,10 +496,10 @@ main :: proc() {
 
 
 
-    vbo_room: u32;
-    gl.GenBuffers(1, &vbo_room);
-    gl.BindBuffer(gl.ARRAY_BUFFER, vbo_room);
-    gl.BufferData(gl.ARRAY_BUFFER, size_of_val(pos_data_room), &pos_data_room[0], gl.STATIC_DRAW);
+    vbo_pos_room: u32;
+    gl.GenBuffers(1, &vbo_pos_room);
+    gl.BindBuffer(gl.ARRAY_BUFFER, vbo_pos_room);
+    gl.BufferData(gl.ARRAY_BUFFER, size_of(pos_data_room), &pos_data_room[0], gl.STATIC_DRAW);
    
     gl.EnableVertexAttribArray(0);
     gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 0, nil);
@@ -486,7 +507,7 @@ main :: proc() {
     vbo_normal_room: u32;
     gl.GenBuffers(1, &vbo_normal_room);
     gl.BindBuffer(gl.ARRAY_BUFFER, vbo_normal_room);
-    gl.BufferData(gl.ARRAY_BUFFER, size_of_val(normal_data_room), &normal_data_room[0], gl.STATIC_DRAW);
+    gl.BufferData(gl.ARRAY_BUFFER, size_of(normal_data_room), &normal_data_room[0], gl.STATIC_DRAW);
 
     gl.EnableVertexAttribArray(1);
     gl.VertexAttribPointer(1, 3, gl.FLOAT, gl.FALSE, 0, nil);
@@ -494,76 +515,76 @@ main :: proc() {
     vbo_uv_room: u32;
     gl.GenBuffers(1, &vbo_uv_room);
     gl.BindBuffer(gl.ARRAY_BUFFER, vbo_uv_room);
-    gl.BufferData(gl.ARRAY_BUFFER, size_of_val(uv_data_room), &uv_data_room[0], gl.STATIC_DRAW);
+    gl.BufferData(gl.ARRAY_BUFFER, size_of(uv_data_room), &uv_data_room[0], gl.STATIC_DRAW);
 
     gl.EnableVertexAttribArray(2);
     gl.VertexAttribPointer(2, 2, gl.FLOAT, gl.FALSE, 0, nil);
 
 
     defer {
-        gl.DeleteBuffers(1, &vbo_room);
+        gl.DeleteBuffers(1, &vbo_pos_room);
+        gl.DeleteBuffers(1, &vbo_normal_room);
+        gl.DeleteBuffers(1, &vbo_uv_room);
         gl.DeleteVertexArrays(1, &vao_room);
     }
 
     //-------------------------------------------------------------------------------------------//    
+
+
 
     // Enable SRGB and depth test and set background color
     gl.Enable(gl.DEPTH_TEST);
     gl.Enable(gl.FRAMEBUFFER_SRGB);
     gl.ClearColor(0.2, 0.3, 0.4, 1.0); 
 
+    controller_offset_x, controller_offset_y, controller_offset_z : f32 = -0.0067174, 0.0017909, -0.0525607;
+
     frame_index: i64 = 0;
     for glfw.WindowShouldClose(window) == 0 {
         glfw.PollEvents();
 
-        calculate_frame_timings(window);
+        glfw.calculate_frame_timings(window);
+
+        // See: https://developer.oculus.com/documentation/pcsdk/latest/concepts/dg-sensor/#dg-sensor-head-tracking
 
         // Get the predicted head pose for the current frame
         ovr_GetEyePoses(session, frame_index, ovrTrue, &hmd_to_eye_offset[0], &layer.RenderPose[0], &layer.SensorSampleTime);
 
-        // Get controller trackign state
-        // See: https://developer.oculus.com/documentation/pcsdk/latest/concepts/dg-sensor/#dg-sensor-head-tracking
+        // Get controller tracking state (i.e. position and orientation)
         ts := ovr_GetTrackingState(session, 0, 1);
 
-        // Main rendering section. All draw calls currently use the same shaders. 
-        gl.UseProgram(program);
+        // Get controller input state (i.e. buttons)
+        is: ovrInputState;
+        ovr_GetInputState(session, ovrControllerType.ovrControllerType_Touch, &is);
 
-        // Bind "controller" texture
-        gl.ActiveTexture(gl.TEXTURE0);
-        gl.BindTexture(gl.TEXTURE_2D, texture_controller);
-        
+        p_left := ts.HandPoses[0].ThePose.Position;
+        p_right := ts.HandPoses[1].ThePose.Position;
+
+        q_reorient := ovrQuatf{math.sin(math.to_radians(39.4/2)), 0.0, 0.0, math.cos(math.to_radians(39.4/2))};
+        q_left := qmul(ts.HandPoses[0].ThePose.Orientation, q_reorient);
+        q_right := qmul(ts.HandPoses[1].ThePose.Orientation, q_reorient);
+
+        AA : i32 = 2;
+        for key in glfw.KEY_1...glfw.KEY_9 {
+            if glfw.GetKey(window, i32(key)) == glfw.PRESS {
+                AA = i32(key) - glfw.KEY_1 + 1;
+            }
+        }
+
+        if glfw.GetKey(window, glfw.KEY_LEFT_CONTROL) == glfw.PRESS {
+            controller_offset_x += f32(glfw.GetKey(window, glfw.KEY_D) - glfw.GetKey(window, glfw.KEY_A))*0.0001;
+            controller_offset_y += f32(glfw.GetKey(window, glfw.KEY_E) - glfw.GetKey(window, glfw.KEY_Q))*0.0001;
+            controller_offset_z += f32(glfw.GetKey(window, glfw.KEY_W) - glfw.GetKey(window, glfw.KEY_S))*0.0001;
+        }
+
         // Upload uniforms that are the same per-eye
-        gl.Uniform1f(gl.get_uniform_location(program, "time\x00"), f32(glfw.GetTime()));
+        gl.Uniform1f(get_uniform_location(program, "time\x00"), f32(glfw.GetTime()));
+        gl.Uniform1i(get_uniform_location(program, "AA\x00"), AA);
 
-        AA : i32 = 4;
-        if glfw.GetKey(window, glfw.KEY_1) == glfw.PRESS {
-            AA = 1;
-        }
-        if glfw.GetKey(window, glfw.KEY_2) == glfw.PRESS {
-            AA = 2;
-        }
-        if glfw.GetKey(window, glfw.KEY_3) == glfw.PRESS {
-            AA = 3;
-        }
-        if glfw.GetKey(window, glfw.KEY_4) == glfw.PRESS {
-            AA = 4;
-        }
-        if glfw.GetKey(window, glfw.KEY_5) == glfw.PRESS {
-            AA = 5;
-        }
-        if glfw.GetKey(window, glfw.KEY_6) == glfw.PRESS {
-            AA = 6;
-        }
-        if glfw.GetKey(window, glfw.KEY_7) == glfw.PRESS {
-            AA = 7;
-        }
-        if glfw.GetKey(window, glfw.KEY_8) == glfw.PRESS {
-            AA = 8;
-        }
-        gl.Uniform1i(gl.get_uniform_location(program, "AA\x00"), AA);
+        // Main rendering section. 
 
         // We need to render the scene twice, once for each eye.
-        for eye in 0..1 {
+        for eye in 0...1 {
             // Grab the current available color buffer texture from the texture swap chain.
             current_index: i32;
             ovr_GetTextureSwapChainCurrentIndex(session, texture_swap_chains[eye], &current_index);
@@ -581,16 +602,15 @@ main :: proc() {
             gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
             // Upload this eye's perspective projection matrix
-            P := ovrMatrix4f_Projection(hmd_desc.MaxEyeFov[eye], f32(0.2), f32(1000.0), u32(ovrProjectionModifier.ovrProjection_None));
-            gl.UniformMatrix4fv(gl.get_uniform_location(program, "P\x00"), 1, gl.TRUE, &P.M[0][0]);
-
+            P := ovrMatrix4f_Projection(hmd_desc.MaxEyeFov[eye], 0.2, 1000.0, u32(ovrProjectionModifier.ovrProjection_None));
+            gl.UniformMatrix4fv(get_uniform_location(program, "P\x00"), 1, gl.TRUE, &P.M[0][0]);
 
             // Upload headset position and orientation as uniforms. 
             // The camera is rotated and translated according to these in the shader
             p_hmd := layer.RenderPose[eye].Position;
             q_hmd := layer.RenderPose[eye].Orientation;
-            gl.Uniform3fv(gl.get_uniform_location(program, "p_hmd\x00"), 1, &p_hmd.x);
-            gl.Uniform4fv(gl.get_uniform_location(program, "q_hmd\x00"), 1, &q_hmd.x);
+            gl.Uniform3fv(get_uniform_location(program, "p_hmd\x00"), 1, &p_hmd.x);
+            gl.Uniform4fv(get_uniform_location(program, "q_hmd\x00"), 1, &q_hmd.x);
 
 
             // @NOTE: The same shader is used to draw both the room (which is shaded based on position)
@@ -599,36 +619,25 @@ main :: proc() {
 
             // Draw the "room" first, which doesn't use any textures, but are shaded
             // based on the pixel's position/coverage relative to global gridlines
-            gl.BindVertexArray(vao_room);
-            gl.Uniform1i(gl.get_uniform_location(program, "apply_texture\x00"), 0);
-            
-            // The room is static
-            gl.Uniform3f(gl.get_uniform_location(program, "p_model\x00"), 0.0, 0.0, 0.0);
-            gl.Uniform4f(gl.get_uniform_location(program, "q_model\x00"), 0.0, 0.0, 0.0, 1.0);
-            gl.DrawArrays(gl.TRIANGLES, 0, u32(num_vertices_room));
 
-            
-            // Next, draw the two controllers as oriented, textured quads
-            gl.BindVertexArray(vao_controller);
-            gl.Uniform1i(gl.get_uniform_location(program, "apply_texture\x00"), 1);
-            
+            // Room
+            draw_model(program, vao_room, 
+                       0, num_vertices_room, 
+                       ovrVector3f{0.0, 0.0, 0.0}, 
+                       ovrVector3f{0.0, 0.0, 0.0}, ovrQuatf{0.0, 0.0, 0.0, 1.0});
+            /*
             // Left controller
-            p_left := ts.HandPoses[0].ThePose.Position;
-            q_left := ts.HandPoses[0].ThePose.Orientation;
-            
-            gl.Uniform3fv(gl.get_uniform_location(program, "p_model\x00"), 1, &p_left.x);
-            gl.Uniform4fv(gl.get_uniform_location(program, "q_model\x00"), 1, &q_left.x);
-            gl.DrawArrays(gl.TRIANGLES, 0, u32(num_vertices_controller));
+            draw_model(program, vao_controllers[0], 
+                       texture_controller, num_vertices_controllers[0], 
+                       ovrVector3f{controller_offset_x, controller_offset_y, controller_offset_z}, 
+                       p_left, q_left);
 
             // Right controller
-            p_right := ts.HandPoses[1].ThePose.Position;
-            q_right := ts.HandPoses[1].ThePose.Orientation;
-
-            gl.Uniform3fv(gl.get_uniform_location(program, "p_model\x00"), 1, &p_right.x);
-            gl.Uniform4fv(gl.get_uniform_location(program, "q_model\x00"), 1, &q_right.x);
-            gl.DrawArrays(gl.TRIANGLES, 0, u32(num_vertices_controller));
-
-
+            draw_model(program, vao_controllers[1], 
+                       texture_controller, num_vertices_controllers[1], 
+                       ovrVector3f{-controller_offset_x, controller_offset_y, controller_offset_z}, 
+                       p_right, q_right);
+        */
             // Commit the render
             ovr_CommitTextureSwapChain(session, texture_swap_chains[eye]);
         }
@@ -650,7 +659,7 @@ main :: proc() {
         // Done
         glfw.SwapBuffers(window);
 
-        frame_index++;
+        frame_index += 1;
     }
 }
 
@@ -661,51 +670,10 @@ print_last_rift_error :: proc() {
 
     errorInfo: ovrErrorInfo;
     ovr_GetLastErrorInfo(&errorInfo);
-    fmt.fprintf(os.stderr, "Error %d, %s\n", errorInfo.Result, errorInfo.ErrorString);
+    fmt.fprintf(os.stderr, "Error %d, %s\n", errorInfo.Result, strings.to_odin_string(cast(^u8)&errorInfo.ErrorString[0]));
 }
 
-error_callback :: proc(error: i32, desc: ^byte) #cc_c {
+error_callback :: proc(error: i32, desc: ^u8) #cc_c {
     fmt.printf("Error code %d:\n    %s\n", error, strings.to_odin_string(desc));
 }
 
-
-// globals for timings
-t1 := 0.0;
-avg_dt := 0.0;
-avg_dt2 := 0.0;
-num_samples := 60;
-counter := 0;
-last_frame_time := 1.0/60.0;
-calculate_frame_timings :: proc(window: ^glfw.window) {
-    t2 := glfw.GetTime();
-    dt := t2-t1;
-    t1 = t2;
-
-    avg_dt += dt;
-    avg_dt2 += dt*dt;
-    counter++;
-
-    last_frame_time = dt;
-
-    if counter == num_samples {
-        avg_dt  /= f64(num_samples);
-        avg_dt2 /= f64(num_samples);
-        std_dt := math.sqrt(avg_dt2 - avg_dt*avg_dt);
-        ste_dt := std_dt/math.sqrt(f64(num_samples));
-
-        // avg: frame time average over num_samples frames
-        // std: standard deviation calculated over those frames
-        // ste: standard error (standard deviation of the average) calculated over those frames
-        
-        title := fmt.aprintf("dt: avg = %.3fms, std = %.3fms, ste = %.4fms. fps = %.1f\x00", 1000.0*avg_dt, 1000.0*std_dt, 1000.0*ste_dt, 1.0/avg_dt);
-        defer free(title);
-
-        glfw.SetWindowTitle(window, &title[0]);
-        
-        num_samples = int(1.0/avg_dt);
-        
-        avg_dt = 0.0;
-        avg_dt2 = 0.0;
-        counter = 0;
-    }
-}

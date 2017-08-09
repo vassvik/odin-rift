@@ -6,8 +6,9 @@ layout(location = 2) in vec2 vertexUV;
 
 uniform float time;
 
-uniform vec3 p_model;
-uniform vec4 q_model;
+uniform vec3 d_model; // offset before rotation
+uniform vec3 p_model; // offset after rotation
+uniform vec4 q_model; // normalized, rotation quaternion
 
 uniform vec3 p_hmd;
 uniform vec4 q_hmd;
@@ -27,13 +28,19 @@ vec3 qrot(vec3 p, vec4 q)
 
 vec4 qconj(vec4 q)
 { 
-    return vec4(-q.x, -q.y, -q.z, q.w); 
+    return vec4(-q.xyz, q.w); 
 }
 
 void main()
 {
-    // input
-    vec3 v = vertexPosition;
+    // passthrough to fragment shader
+    uv = vertexUV;
+    pos = vertexPosition + d_model;
+    normal = vertexNormal;
+
+    // input, offset to center model
+    vec3 v = vertexPosition + d_model;
+    
 
     // model to world space (i.e. controller models)
     v = qrot(v, q_model) + p_model;
@@ -44,8 +51,4 @@ void main()
     // output, view space to clip space
     gl_Position = P*vec4(v, 1.0);
     
-    // passthrough to fragment shader
-    uv = vertexUV;
-    pos = vertexPosition;
-    normal = vertexNormal;
 }
