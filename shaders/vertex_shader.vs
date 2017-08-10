@@ -15,10 +15,9 @@ uniform vec4 q_hmd;
 
 uniform mat4 P; // perspective projection matrix, per-eye
 
-out vec2 uv;
-out vec3 pos;
-out vec3 normal;
-
+out vec2 TexCoords;
+out vec3 WorldPos;
+out vec3 Normal;
 
 vec3 qrot(vec3 p, vec4 q)
 { 
@@ -34,21 +33,21 @@ vec4 qconj(vec4 q)
 void main()
 {
     // passthrough to fragment shader
-    uv = vertexUV;
-    pos = vertexPosition + d_model;
-    normal = vertexNormal;
+    TexCoords = vertexUV;
+    Normal = qrot(qrot(vertexNormal, q_model), qconj(q_hmd));
+    Normal = qrot(vertexNormal, q_model);
 
     // input, offset to center model
     vec3 v = vertexPosition + d_model;
     
-
     // model to world space (i.e. controller models)
     v = qrot(v, q_model) + p_model;
+
+    WorldPos = v;
 
     // world space to camera space,
     v = qrot(v - p_hmd, qconj(q_hmd));
 
     // output, view space to clip space
     gl_Position = P*vec4(v, 1.0);
-    
 }

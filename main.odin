@@ -621,6 +621,30 @@ main :: proc() {
             gl.Uniform3fv(get_uniform_location(program, "p_hmd\x00"), 1, &p_hmd.x);
             gl.Uniform4fv(get_uniform_location(program, "q_hmd\x00"), 1, &q_hmd.x);
 
+            gl.Uniform3f(get_uniform_location(program, "albedo"), 0.0, 0.0, 0.0);
+            gl.Uniform1f(get_uniform_location(program, "metallic"), 0.3);
+            gl.Uniform1f(get_uniform_location(program, "roughness"), 0.5);
+            gl.Uniform1f(get_uniform_location(program, "ao"), 1.0);
+
+            d :f32 = 40.0;
+            light_positions := [...]f32 {
+                -d,  d, d,
+                 d,  d, d,
+                -d, -d, d,
+                 d, -d, d,
+            };
+
+            l :f32= 300.0;
+            light_colors := [...]f32 {
+                l, l, l,
+                l, l, l,
+                l, l, l,
+                l, l, l
+            };
+            gl.Uniform3fv(get_uniform_location(program, "lightPositions\x00"), 4, &light_positions[0]);
+            gl.Uniform3fv(get_uniform_location(program, "lightColors\x00"), 4, &light_colors[0]);
+
+            gl.Uniform3f(get_uniform_location(program, "camPos"), p_hmd.x, p_hmd.y, p_hmd.z);
 
             // @NOTE: The same shader is used to draw both the room (which is shaded based on position)
             // and the controllers (which are shaded based on uv's and a texture), 
