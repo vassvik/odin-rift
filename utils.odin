@@ -16,6 +16,10 @@ Model :: struct {
 	normals: []Vec3;
 	uvs: []Vec2;
 	indices: []i32;
+
+	vao: u32;
+	vbos: [3]u32;
+	ebo: u32;
 }
 
 strip_leading_whitespace :: proc(data: string) -> (rest: string) {
@@ -110,7 +114,7 @@ read_obj :: proc(filename: string) -> (Model, bool) {
 
 	fmt.println(len(positions), len(normals), len(uvs), len(indices));
 
-	return Model{positions[..], normals[..], uvs[..], indices[..]}, true;
+	return Model{positions[..], normals[..], uvs[..], indices[..], 0, [...]u32{0, 0, 0}, 0}, true;
 }
 
 i32_from_string :: proc(str: string) -> i32 {

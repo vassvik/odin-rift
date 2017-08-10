@@ -74,7 +74,7 @@ draw_model :: proc(program: u32, vao: u32, texture: u32, num_vertices: u32, d, p
 draw_model2 :: proc(program: u32, vao: u32, texture: u32, num_elements: u32, d, p: rift.ovrVector3f, q: rift.ovrQuatf) {
     gl.UseProgram(program);
     gl.BindVertexArray(vao);
-
+    
     gl.BindTexture(gl.TEXTURE_2D, texture);
     gl.Uniform1i(get_uniform_location(program, "apply_texture\x00"), texture != 0 ? 1 : 0);
     
@@ -109,7 +109,9 @@ main :: proc() {
     fmt.fprintln(os.stderr, "Succeeded creating VR session");
 
     //-------------------------------------------------------------------------------------------//
-
+    error_callback :: proc(error: i32, desc: ^u8) #cc_c {
+        fmt.printf("Error code %d:\n    %s\n", error, strings.to_odin_string(desc));
+    }
     glfw.SetErrorCallback(error_callback);
 
     if glfw.Init() == 0 {
@@ -326,15 +328,11 @@ main :: proc() {
     
     //num_vertices_controllers: [2]u32 = [2]u32{u32(len(v1)), u32(len(v2))};
 
-    load_model :: proc(using model: utils.Model) -> (vao: u32, vbos: [3]u32, ebo: u32) {
-        vao: u32;
+    load_model :: proc(using model: ^utils.Model) {
         gl.GenVertexArrays(1, &vao);
         gl.BindVertexArray(vao);
 
-        vbos: [3]u32;
         gl.GenBuffers(3, &vbos[0]);
-
-        ebo: u32;
         gl.GenBuffers(1, &ebo);
 
         gl.BindBuffer(gl.ARRAY_BUFFER, vbos[0]);
@@ -356,20 +354,20 @@ main :: proc() {
         gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, size_of(indices[0])*len(indices), &indices[0], gl.STATIC_DRAW);
         
         fmt.println(size_of(positions[0])*len(positions), size_of(normals[0])*len(normals), size_of(uvs[0])*len(uvs), size_of(indices[0])*len(indices));
-
-        return vao, vbos, ebo;
     }
 
-    vao_left, vbos_left, ebo_left := load_model(model_left);
-    vao_right, vbos_right, ebo_right := load_model(model_right);
+    unload_model :: proc(using model: ^utils.Model) {
+        gl.DeleteVertexArrays(1, &vao);
+        gl.DeleteBuffers(3, &vbos[0]);
+        gl.DeleteBuffers(1, &ebo);
+    }
+
+    load_model(&model_left);
+    load_model(&model_right);
 
     defer {
-        gl.DeleteVertexArrays(1, &vao_left);
-        gl.DeleteVertexArrays(1, &vao_right);
-        gl.DeleteBuffers(3, &vbos_left[0]);
-        gl.DeleteBuffers(3, &vbos_right[0]);
-        gl.DeleteBuffers(1, &ebo_left);
-        gl.DeleteBuffers(1, &ebo_right);
+        unload_model(&model_left);
+        unload_model(&model_right);
     }
 
 
@@ -672,13 +670,13 @@ main :: proc() {
                        p_right, q_right);
         */
             // Left controller
-            draw_model2(program, vao_left, 
+            draw_model2(program, model_left.vao, 
                        texture_controller, cast(u32)len(model_left.indices), 
                        ovrVector3f{controller_offset_x, controller_offset_y, controller_offset_z}, 
                        p_left, q_left);
 
             // Right controller
-            draw_model2(program, vao_right, 
+            draw_model2(program, model_right.vao, 
                        texture_controller, cast(u32)len(model_right.indices), 
                        ovrVector3f{-controller_offset_x, controller_offset_y, controller_offset_z}, 
                        p_right, q_right);
@@ -718,7 +716,4 @@ print_last_rift_error :: proc() {
     fmt.fprintf(os.stderr, "Error %d, %s\n", errorInfo.Result, strings.to_odin_string(cast(^u8)&errorInfo.ErrorString[0]));
 }
 
-error_callback :: proc(error: i32, desc: ^u8) #cc_c {
-    fmt.printf("Error code %d:\n    %s\n", error, strings.to_odin_string(desc));
-}
 

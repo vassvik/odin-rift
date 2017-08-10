@@ -34,7 +34,6 @@ void main()
 {
     // passthrough to fragment shader
     TexCoords = vertexUV;
-    Normal = qrot(qrot(vertexNormal, q_model), qconj(q_hmd));
     Normal = qrot(vertexNormal, q_model);
 
     // input, offset to center model
