@@ -2,6 +2,12 @@
 
 # README OUT OF DATE
 
+## NOTE: Initialize submodules:
+
+```
+git submodule update --init --recursive --remote
+```
+
 A library for the programming language [Odin](https://github.com/gingerBill/Odin) for interfacing with the Oculus Rift SDK (version 1.13 currently).
 
 Works for Odin commit "f4924e39d487f95bbfbfbc83dd0ae237923505ae" as of 28th of May, and at least Oculus SDK version 1.13 and onwards. Only works for Windows, as the SDK is Windows only at this moment. Windows 10 is recommended (and perhaps needed?).
