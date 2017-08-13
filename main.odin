@@ -322,8 +322,8 @@ main :: proc() {
     defer gl.DeleteProgram(program);
 
 
-    model_left, status_left := utils.read_obj("Oculus_Left.obj");
-    model_right, status_right := utils.read_obj("Oculus_Right.obj");
+    model_left, status_left := utils.read_obj("models/Oculus_Left.obj");
+    model_right, status_right := utils.read_obj("models/Oculus_Right.obj");
     //if true do return;
     
     //num_vertices_controllers: [2]u32 = [2]u32{u32(len(v1)), u32(len(v2))};
