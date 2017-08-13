@@ -29,8 +29,8 @@ import (
    "fmt.odin";
    "os.odin";
 
-   "glfw.odin";
-   "gl.odin";
+   "external/odin-glfw/glfw.odin";
+   "external/odin-gl/gl.odin";
 
    "rift.odin";
    "utils.odin";
