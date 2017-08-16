@@ -31,6 +31,7 @@ import (
 
    "external/odin-glfw/glfw.odin";
    "external/odin-gl/gl.odin";
+   "external/odin-fbx/fbx.odin";
 
    "rift.odin";
    "utils.odin";
@@ -85,6 +86,45 @@ draw_model2 :: proc(program: u32, vao: u32, texture: u32, num_elements: u32, d, 
     gl.DrawElements(gl.TRIANGLES, i32(num_elements), gl.UNSIGNED_INT, nil);
 }
 
+Vec3 :: struct #ordered {
+    x, y, z: f32;
+};
+
+Vertex :: struct #ordered {
+    position, normal: Vec3;
+};
+
+Model :: struct {
+    vertices: []Vertex;
+    
+    num_vertices: int;
+    num_triangles: int;
+
+    bbox: [6]f32 = [6]f32{1.0e9, -1.0e9, 1.0e9, -1.0e9, 1.09e9, -1.0e9};
+
+    vao: u32;
+    vbo: u32;
+};
+
+model_init_and_upload :: proc(using model: ^Model) {
+    gl.CreateBuffers(1, &vbo);
+    gl.NamedBufferData(vbo, size_of(Vertex)*num_vertices, &vertices[0], gl.STATIC_DRAW);
+    
+    gl.CreateVertexArrays(1, &vao);
+    gl.VertexArrayVertexBuffer(vao, 0, vbo, 0, size_of(Vertex));
+
+    gl.EnableVertexArrayAttrib(vao, 0);
+    gl.EnableVertexArrayAttrib(vao, 1);
+    
+    gl.VertexArrayAttribFormat(vao, 0, 3, gl.FLOAT, gl.FALSE, 0);
+    gl.VertexArrayAttribFormat(vao, 1, 3, gl.FLOAT, gl.FALSE, 12);
+
+    gl.VertexArrayAttribBinding(vao, 0, 0);
+    gl.VertexArrayAttribBinding(vao, 1, 0);
+}
+
+
+
 main :: proc() {
     using rift;
 
@@ -137,8 +177,60 @@ main :: proc() {
     set_proc_address :: proc(p: rawptr, name: string) { 
         (cast(^rawptr)p)^ = rawptr(glfw.GetProcAddress(&name[0]));
     }
-    gl.load_up_to(3, 3, set_proc_address);
+    gl.load_up_to(4, 5, set_proc_address);
     fmt.fprintln(os.stderr, "Loaded OpenGL function pointers");
+
+
+
+    load_part :: proc(part: ^fbx.Geometry) -> Model {
+        using model: Model;
+        vertices = make([]Vertex, len(part.indices));
+        for index, j in part.indices {
+            i := int(index < 0 ? -1*index - 1 : index);
+            x,  y,  z  := part.vertices[3*i+0], part.vertices[3*i+1], part.vertices[3*i+2];
+            nx, ny, nz := part.normals[3*j+0],  part.normals[3*j+1],  part.normals[3*j+2];
+
+            bbox[0] = min(bbox[0], f32(x));
+            bbox[1] = max(bbox[1], f32(x));
+            bbox[2] = min(bbox[2], f32(y));
+            bbox[3] = max(bbox[3], f32(y));
+            bbox[4] = min(bbox[4], f32(z));
+            bbox[5] = max(bbox[5], f32(z));
+
+            vertices[j] = Vertex{Vec3{f32(x),  f32(y),  f32(z)},
+                                 Vec3{f32(nx), f32(ny), f32(nz)}};
+        }
+
+        fmt.println(bbox);
+
+
+        num_vertices = len(vertices);
+        num_triangles = num_vertices/3;
+
+        model_init_and_upload(&model);
+
+        return model;
+    }
+
+    fbx_right := fbx.load_fbx("models/rightController.FBX");
+    model := fbx.create_model_from_fbx(&fbx_right);
+
+    models := make([]Model, len(model.parts));
+
+    /*
+    rightController::Model
+    menuButton::Model
+    confimButton::Model
+    cancelButton::Model
+    stick::Model
+    grip::Model
+    trigger::Model
+    */
+    for _, i in model.parts {
+        fmt.println("asdasd");
+        models[i] = load_part(&model.parts[i]);
+        fmt.printf("%.6f %.6f %.6f\n", model.parts[i].local_translation[0], model.parts[i].local_translation[1],model.parts[i].local_translation[2]);
+    }
 
     //-------------------------------------------------------------------------------------------//
     // https://developer.oculus.com/documentation/pcsdk/latest/concepts/dg-render/#dg-render-initialize
@@ -371,53 +463,6 @@ main :: proc() {
     }
 
 
-    // Setup "controller" texture and upload
-    texture_width: i32 = 4;
-    texture_height: i32 = 4;
-    texture_data := [...]u8 {
-        255, 152,   0, // orange
-        156,  39, 176, // purple
-          3, 169, 244, // light blue
-        139, 195,  74, // light green
-
-        255,  87,  34, // deep orange
-        103,  58, 183, // deep purple
-          0, 188, 212, // cyan
-        205, 220,  57, // lime
-
-        244,  67,  54, // red
-         63,  81, 181, // indigo
-          0, 150, 137, // teal
-        255, 235,  59, // yellow
-        
-        233,  30,  99, // pink
-         33, 150, 243, // blue
-         76, 175,  80, // green
-        255, 193,   7, // amber
-    };
-
-    texture_controller: u32;
-    gl.GenTextures(1, &texture_controller);
-    gl.ActiveTexture(gl.TEXTURE0);
-    gl.BindTexture(gl.TEXTURE_2D, texture_controller);
-
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-    gl.TexImage2D(gl.TEXTURE_2D, 0, gl.SRGB, texture_width, texture_height, 0, gl.RGB, gl.UNSIGNED_BYTE, &texture_data[0]);
-
-    gl.UseProgram(program);
-    gl.Uniform1i(get_uniform_location(program, "texture_sampler\x00"), 0);
-
-    defer {
-        gl.DeleteTextures(1, &texture_controller);
-    }
-
-
-
-
-
     // Setup room vao, vbo and vertex attribs, and upload
     vao_room: u32;
     gl.GenVertexArrays(1, &vao_room);
@@ -534,17 +579,34 @@ main :: proc() {
         gl.DeleteVertexArrays(1, &vao_room);
     }
 
+
+
+    vao_coordinates: u32;
+    gl.GenVertexArrays(1, &vao_coordinates);
+    gl.BindVertexArray(vao_coordinates);
+
+    vertices_coordinates := [...]f32 {-1.0,  0.0,  0.0, 
+                                       1.0,  0.0,  0.0,
+                                       0.0, -1.0,  0.0,
+                                       0.0,  1.0,  0.0,
+                                       0.0,  0.0, -1.0,
+                                       0.0,  0.0,  1.0
+    };
+    vbo_lines: u32;
+    gl.GenBuffers(1, &vbo_lines);
+    gl.BindBuffer(gl.ARRAY_BUFFER, vbo_lines);
+    gl.BufferData(gl.ARRAY_BUFFER, size_of(vertices_coordinates), &vertices_coordinates[0], gl.STATIC_DRAW);
+
+    gl.EnableVertexAttribArray(0);
+    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 0, nil);
+
+
     //-------------------------------------------------------------------------------------------//    
-
-
 
     // Enable SRGB and depth test and set background color
     gl.Enable(gl.DEPTH_TEST);
     gl.Enable(gl.FRAMEBUFFER_SRGB);
     gl.ClearColor(0.2, 0.3, 0.4, 1.0); 
-
-    //controller_offset_x, controller_offset_y, controller_offset_z : f32 = -0.0067174, 0.0017909, -0.0525607;
-    controller_offset_x, controller_offset_y, controller_offset_z : f32 = 0.0, 0.0, 0.0;
 
     frame_index: i64 = 0;
     for glfw.WindowShouldClose(window) == 0 {
@@ -563,12 +625,16 @@ main :: proc() {
         // Get controller input state (i.e. buttons)
         is: ovrInputState;
         ovr_GetInputState(session, ovrControllerType.ovrControllerType_Touch, &is);
-
         p_left := ts.HandPoses[0].ThePose.Position;
         p_right := ts.HandPoses[1].ThePose.Position;
 
         q_reorient := ovrQuatf{0.0, math.sin(math.to_radians(180.0/2)), 0.0, math.cos(math.to_radians(180.0/2))};
         q_left := qmul(ts.HandPoses[0].ThePose.Orientation, q_reorient);
+        
+        // @NOTE: add pre-orientation to model quaternion, swaps y and z components of offsets and negates the new y component.
+        q_reorient1 := ovrQuatf{0.0, math.sin(math.to_radians(180.0/2)), 0.0, math.cos(math.to_radians(180.0/2))};
+        q_reorient2 := ovrQuatf{math.sin(math.to_radians(-90.0/2)), 0.0, 0.0, math.cos(math.to_radians(-90.0/2))};
+        q_reorient = qmul(q_reorient1, q_reorient2);
         q_right := qmul(ts.HandPoses[1].ThePose.Orientation, q_reorient);
 
         AA : i32 = 2;
@@ -578,11 +644,6 @@ main :: proc() {
             }
         }
 
-        if glfw.GetKey(window, glfw.KEY_LEFT_CONTROL) == glfw.PRESS {
-            controller_offset_x += f32(glfw.GetKey(window, glfw.KEY_D) - glfw.GetKey(window, glfw.KEY_A))*0.0001;
-            controller_offset_y += f32(glfw.GetKey(window, glfw.KEY_E) - glfw.GetKey(window, glfw.KEY_Q))*0.0001;
-            controller_offset_z += f32(glfw.GetKey(window, glfw.KEY_W) - glfw.GetKey(window, glfw.KEY_S))*0.0001;
-        }
 
         // Upload uniforms that are the same per-eye
         gl.Uniform1f(get_uniform_location(program, "time\x00"), f32(glfw.GetTime()));
@@ -650,37 +711,175 @@ main :: proc() {
 
             // Draw the "room" first, which doesn't use any textures, but are shaded
             // based on the pixel's position/coverage relative to global gridlines
-
             // Room
             draw_model(program, vao_room, 
                        0, num_vertices_room, 
                        ovrVector3f{0.0, 0.0, 0.0}, 
                        ovrVector3f{0.0, 0.0, 0.0}, ovrQuatf{0.0, 0.0, 0.0, 1.0});
-            /*
-            // Left controller
-            draw_model(program, vao_controllers[0], 
-                       texture_controller, num_vertices_controllers[0], 
-                       ovrVector3f{controller_offset_x, controller_offset_y, controller_offset_z}, 
-                       p_left, q_left);
 
-            // Right controller
-            draw_model(program, vao_controllers[1], 
-                       texture_controller, num_vertices_controllers[1], 
-                       ovrVector3f{-controller_offset_x, controller_offset_y, controller_offset_z}, 
-                       p_right, q_right);
-        */
             // Left controller
             draw_model2(program, model_left.vao, 
-                       texture_controller, cast(u32)len(model_left.indices), 
-                       ovrVector3f{controller_offset_x, controller_offset_y, controller_offset_z}, 
+                       1, cast(u32)len(model_left.indices), 
+                       ovrVector3f{0, 0 ,0}, 
                        p_left, q_left);
 
-            // Right controller
-            draw_model2(program, model_right.vao, 
-                       texture_controller, cast(u32)len(model_right.indices), 
-                       ovrVector3f{-controller_offset_x, controller_offset_y, controller_offset_z}, 
-                       p_right, q_right);
+            draw_coordinates_at :: proc(vao_coordinates, program: u32, p, d: ovrVector3f, q: ovrQuatf, c: ovrVector3f, o, n: int) {
+                gl.UseProgram(program);
+                gl.BindVertexArray(vao_coordinates);
+                
+                gl.Uniform1i(get_uniform_location(program, "apply_texture\x00"), 2);
+                
+                gl.Uniform3f(get_uniform_location(program, "coordinate_color\x00"), c.x, c.y, c.z);
+                gl.Uniform3f(get_uniform_location(program, "d_model\x00"), d.x, d.y, d.z);
+                gl.Uniform3f(get_uniform_location(program, "p_model\x00"), p.x, p.y, p.z);
+                gl.Uniform4f(get_uniform_location(program, "q_model\x00"), q.x, q.y, q.z, q.w);
 
+                //gl.DrawArrays(gl.LINES, i32(o), i32(n));
+                gl.DrawArraysInstanced(gl.TRIANGLE_STRIP, 0, 18, 3);
+
+            }
+            draw_coordinates_at :: proc(vao_coordinates, program: u32, p, d: ovrVector3f, q,q2: ovrQuatf, c: ovrVector3f, o, n: int) {
+                gl.UseProgram(program);
+                gl.BindVertexArray(vao_coordinates);
+                
+                gl.Uniform1i(get_uniform_location(program, "apply_texture\x00"), 2);
+                
+                gl.Uniform3f(get_uniform_location(program, "coordinate_color\x00"), c.x, c.y, c.z);
+                gl.Uniform3f(get_uniform_location(program, "d_model\x00"), d.x, d.y, d.z);
+                gl.Uniform3f(get_uniform_location(program, "p_model\x00"), p.x, p.y, p.z);
+                gl.Uniform4f(get_uniform_location(program, "q_model\x00"), q.x, q.y, q.z, q.w);
+                gl.Uniform4f(get_uniform_location(program, "q_pre\x00"), q2.x, q2.y, q2.z, q2.w);
+
+                //gl.DrawArrays(gl.LINES, i32(o), i32(n));
+                gl.DrawArraysInstanced(gl.TRIANGLE_STRIP, 0, 18, 3);
+
+            }
+            draw_coordinates_at(vao_coordinates, program, p_right, ovrVector3f{0.0, 0.0, 0.0}, q_right, ovrVector3f{0.0, 0.0, 0.0}, 0, 6);
+            //draw_coordinates_at(vao_coordinates, program, p_right, ovrVector3f{f32(model.parts[4].local_translation[0]), f32(-model.parts[4].local_translation[2]), f32(model.parts[4].local_translation[1])}, q_right, ovrVector3f{0.0, 1.0, 0.0}, 0, 6);
+            //draw_coordinates_at(vao_coordinates, program, p_right, ovrVector3f{-0.01063739, -0.004980708, -0.00941856}, q_right, ovrVector3f{0.0, 1.0, 0.0}, 0, 6);
+            
+            gl.UseProgram(program);
+            gl.Uniform3f(get_uniform_location(program, "d_pivot\x00"), 0.0, 0.0, 0.0);
+            gl.Uniform3f(get_uniform_location(program, "p_model\x00"), p_right.x, p_right.y, p_right.z);
+            gl.Uniform4f(get_uniform_location(program, "q_model\x00"), q_right.x, q_right.y, q_right.z, q_right.w);
+            gl.Uniform4f(get_uniform_location(program, "q_pivot\x00"), 0.0, 0.0, 0.0, 1.0);
+
+            gl.Uniform1i(get_uniform_location(program, "apply_texture\x00"), 1);
+
+            {
+                // Menu
+                gl.Uniform3f(get_uniform_location(program, "d_model\x00"), 0.0, 0.0, 0.0);
+
+                gl.BindVertexArray(models[1].vao);
+                gl.DrawArrays(gl.TRIANGLES, 0, i32(cast(u32)models[1].num_vertices));  
+            }
+
+            {
+                // B
+                p1 := ovrVector3f{0.009135387, -0.000116555, 0.005499177};
+                p2 := ovrVector3f{0.008937141, -0.001804241, 0.005691095};
+                
+                if is.Buttons&1 == 0 {
+                    gl.Uniform3f(get_uniform_location(program, "d_model\x00"), 0.0, 0.0, 0.0);
+                } else {
+                    gl.Uniform3f(get_uniform_location(program, "d_model\x00"), p2.x-p1.x, p2.z-p1.z, p2.y-p1.y);
+                }
+
+                gl.BindVertexArray(models[2].vao);
+                gl.DrawArrays(gl.TRIANGLES, 0, i32(cast(u32)models[2].num_vertices));  
+            }
+
+            {
+                // A
+                p1 := ovrVector3f{0.00191709, -0.0009119599, -0.007383698};
+                p2 := ovrVector3f{0.001718102, -0.002603772, -0.007191364};
+
+                if is.Buttons&2 == 0 {
+                    gl.Uniform3f(get_uniform_location(program, "d_model\x00"), 0.0, 0.0, -0.0);
+                } else {
+                    gl.Uniform3f(get_uniform_location(program, "d_model\x00"), p2.x-p1.x, p2.z-p1.z, p2.y-p1.y);
+                }
+
+                gl.BindVertexArray(models[3].vao);
+                gl.DrawArrays(gl.TRIANGLES, 0, i32(cast(u32)models[3].num_vertices));  
+            }
+
+
+            gl.Uniform3f(get_uniform_location(program, "d_model\x00"), 0.0, 0.0, 0.0);
+            
+            {
+                // stick
+                dx := is.Thumbstick[1].x;
+                dy := is.Thumbstick[1].y;
+                dr := math.sqrt(dx*dx + dy*dy + 1.0e-9);
+
+                a := 15.0*math.PI/180.0 * (dr/1.0);
+                q := ovrQuatf{dy/dr*math.sin(a/2), -dx/dr*math.sin(a/2), 0.0*math.sin(a/2), math.cos(a/2)};
+
+                gl.Uniform3f(get_uniform_location(program, "d_pivot\x00"), -0.01063739, -0.004980708, -0.00941856);
+                gl.Uniform4f(get_uniform_location(program, "q_pivot\x00"), q.x, q.y, q.z, q.w);
+
+                gl.BindVertexArray(models[4].vao);
+                gl.DrawArrays(gl.TRIANGLES, 0, i32(cast(u32)models[4].num_vertices));  
+            }
+
+            {
+                // Grip
+
+                // Extract pivot axis from UP quaternion
+                x, y, z, w : f32= 0.04835906, 0.5594535, 0.8149385, 0.1433468; 
+                sinangle := math.sqrt(1.0 - w*w);
+                ax, ay, az := x/sinangle, y/sinangle, z/sinangle;
+
+                // interpolate angle between 0 and the difference in angle between the UP and DOWN quaternions
+                aa := is.HandTrigger[1]*0.0156846; // 2*0.0156846 == 2*arccos(0.1278072) - 2*arccos(0.1433468)
+                qq := ovrQuatf{ax*math.sin(aa), ay*math.sin(aa), az*math.sin(aa), math.cos(aa)}; // factor 1/2 cancels
+
+                // Interpolate position 
+                p1 := ovrVector3f{-0.01307428, 0.02563973, -0.02742721}; // Up position, y and z swapped due to 90 degree rotation, new y negated
+                p2 := ovrVector3f{-0.01826144, 0.02345688, -0.02513915}; // Down position, y and z swapped due to 90 degree rotation, new y negated
+                p := ovrVector3f{p1.x + (p2.x-p1.x)*is.HandTrigger[1], p1.y + (p2.y-p1.y)*is.HandTrigger[1],p1.z + (p2.z-p1.z)*is.HandTrigger[1]};
+
+                gl.Uniform3f(get_uniform_location(program, "d_pivot\x00"), p.x, p.y, p.z);
+                // gl.Uniform3f(get_uniform_location(program, "d_model\x00"), 0.9*(p.x-p1.x), 0.9*(p.y-p1.y), 0.9*(p.z-p1.z)); // doesn't look good enough
+                gl.Uniform3f(get_uniform_location(program, "d_model\x00"), -0.0045*is.HandTrigger[1], -0.0005*is.HandTrigger[1], 0.0015*is.HandTrigger[1]);
+                gl.Uniform4f(get_uniform_location(program, "q_pivot\x00"), qq.x, qq.y, qq.z, qq.w);
+
+                gl.BindVertexArray(models[5].vao);
+                gl.DrawArrays(gl.TRIANGLES, 0, i32(cast(u32)models[5].num_vertices));     
+            }
+
+            {
+                // Trigger
+                x, y, z, w : f32= -0.6180527, 0.02941076, -0.05015482, 0.7839837;
+        
+                cosangle := w;
+                sinangle := math.sqrt(1.0 - cosangle*cosangle);
+
+                aa := -is.IndexTrigger[1]*0.173899;
+                ax, ay, az := x/sinangle, y/sinangle, z/sinangle;
+
+                qq := ovrQuatf{ax*math.sin(aa), ay*math.sin(aa), az*math.sin(aa), math.cos(aa)};
+                gl.Uniform3f(get_uniform_location(program, "d_model\x00"), 0.0, 0.0, 0.0);
+                gl.Uniform3f(get_uniform_location(program, "d_pivot\x00"), 0.001420307, -0.02186586, -0.005496453);
+                gl.Uniform4f(get_uniform_location(program, "q_pivot\x00"), qq.x, qq.y, qq.z, qq.w);
+
+                gl.BindVertexArray(models[6].vao);
+                gl.DrawArrays(gl.TRIANGLES, 0, i32(cast(u32)models[6].num_vertices));           
+            }
+
+
+            gl.Uniform3f(get_uniform_location(program, "d_pivot\x00"), 0.0, 0.0, 0.0);
+            gl.Uniform4f(get_uniform_location(program, "q_pivot\x00"), 0.0, 0.0, 0.0, 1.0);
+
+            for i in 0..len(models)-1 {
+                if i != 0 || i == 4 || i == 5 do continue;
+                draw_model(program, models[i].vao, 
+                       1, cast(u32)models[i].num_vertices, 
+                       ovrVector3f{0.0, 0.0, 0.0}, 
+                       p_right, q_right);
+            }
+            
             // Commit the render
             ovr_CommitTextureSwapChain(session, texture_swap_chains[eye]);
         }
@@ -706,7 +905,6 @@ main :: proc() {
     }
 }
 
-
 // Error reporting helpers:
 print_last_rift_error :: proc() {
     using rift;
@@ -715,5 +913,3 @@ print_last_rift_error :: proc() {
     ovr_GetLastErrorInfo(&errorInfo);
     fmt.fprintf(os.stderr, "Error %d, %s\n", errorInfo.Result, strings.to_odin_string(cast(^u8)&errorInfo.ErrorString[0]));
 }
-
-

@@ -19,6 +19,7 @@ uniform vec3 camPos;
 uniform int apply_texture;
 uniform int AA;
 
+uniform vec3 coordinate_color;
 
 const float PI = 3.14159265359;
   
@@ -93,7 +94,7 @@ void main()
 
         FragColor = vec4(color, 1.0);
         //FragColor = vec4(0.5 + 0.5*normalize(Normal), 1.0);
-    } else {
+    } else if (apply_texture == 0) {
         vec2 dpdx = dFdx(TexCoords);
         vec2 dpdy = dFdy(TexCoords);
 
@@ -113,6 +114,8 @@ void main()
         vec3 fgColor = vec3(0.0, 0.0, 0.0);
         vec4 color = vec4(vec3(bgColor*c + fgColor*(1.0 - c)), 1.0);
         FragColor = color;
+    } else {
+        FragColor = vec4(coordinate_color, 1.0);
     }
     
 }  
