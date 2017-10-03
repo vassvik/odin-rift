@@ -1,29 +1,33 @@
-#version 330 core
+#version 450 core
 
 layout(location = 0) in vec3 vertexPosition;
 layout(location = 1) in vec3 vertexNormal;
 layout(location = 2) in vec2 vertexUV;
 
-uniform float time;
-
-uniform vec3 d_pivot; // offset before rotation
-uniform vec4 q_pivot;
-
-uniform vec3 d_model; // offset before rotation
-uniform vec3 p_model; // offset after rotation
-uniform vec4 q_model; // normalized, rotation quaternion
-
-uniform vec3 p_hmd;
-uniform vec4 q_hmd;
-
-uniform mat4 P; // perspective projection matrix, per-eye
 
 out vec2 TexCoords;
 out vec3 WorldPos;
 out vec3 Normal;
 
+
+uniform float time;
+
 uniform int vertex_mode;
 uniform int apply_texture;
+
+// p = position, q = quaternion, d = offset
+uniform vec3 p_hmd;
+uniform vec4 q_hmd;
+
+uniform vec3 d_pivot;
+uniform vec4 q_pivot;
+
+uniform vec3 d_model;
+uniform vec4 q_model;
+uniform vec3 p_model;
+
+uniform mat4 P; // perspective projection matrix, per-eye
+
 
 vec3 qrot(vec3 p, vec4 q)
 { 
@@ -41,11 +45,13 @@ void main()
     vec3 v = vertexPosition;
 
     if (apply_texture == 2) {
+        // expand index to quad
         float y = gl_VertexID % 2;
         float x = gl_VertexID / 2;
         x = x / 8.0;
         y = 2.0*(y / 1.0) - 1.0;
 
+        // expand quad to cylinder
         float r = 0.001;
         if (gl_InstanceID == 0) {
             v = vec3(y, r*cos(2.0*3.1416*x), r*sin(2.0*3.1416*x));

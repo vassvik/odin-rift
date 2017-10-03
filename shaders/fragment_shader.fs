@@ -1,8 +1,20 @@
-#version 330 core
+#version 450 core
+
 out vec4 FragColor;
+
+
 in vec2 TexCoords;
 in vec3 WorldPos;
 in vec3 Normal;
+
+
+const float PI = 3.14159265359;
+
+uniform int apply_texture;
+uniform int AA;
+
+uniform vec3 coordinate_color;
+
 
 // material parameters
 uniform vec3  albedo;
@@ -16,12 +28,6 @@ uniform vec3 lightColors[4];
 
 uniform vec3 camPos;
 
-uniform int apply_texture;
-uniform int AA;
-
-uniform vec3 coordinate_color;
-
-const float PI = 3.14159265359;
   
 // ----------------------------------------------------------------------------
 float DistributionGGX(vec3 N, vec3 H, float roughness);
@@ -120,14 +126,6 @@ void main()
     
 }  
 
-float CalculateAttenuation(vec3 lp, float lr, vec3 FragPos) {
-    float distance = distance(lp, FragPos);
-
-    float saturated = pow(clamp(1 - pow(distance / lr, 4), 0.0, 1.0), 2);
-
-    return saturated / (pow(distance, 2) + 1);
-}
-
 float inside_grid(vec2 p, float m, float t) {
     p = fract(m*p + 0.5) - 0.5;
 
@@ -137,6 +135,15 @@ float inside_grid(vec2 p, float m, float t) {
         return 0.0;
     }
 }
+
+float CalculateAttenuation(vec3 lp, float lr, vec3 FragPos) {
+    float distance = distance(lp, FragPos);
+
+    float saturated = pow(clamp(1 - pow(distance / lr, 4), 0.0, 1.0), 2);
+
+    return saturated / (pow(distance, 2) + 1);
+}
+
 // ----------------------------------------------------------------------------
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {

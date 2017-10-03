@@ -1,30 +1,29 @@
-import (
-	"os.odin";
-	"fmt.odin";
-)
+import "core:os.odin";
+import "core:fmt.odin";
+
 
 Vec2 :: struct {
-	x, y: f32;
+	x, y: f32,
 }
 
 Vec3 :: struct {
-	x, y, z: f32;
+	x, y, z: f32,
 }
 
 Model :: struct {
-	positions: []Vec3;
-	normals: []Vec3;
-	uvs: []Vec2;
-	indices: []i32;
+	positions: []Vec3,
+	normals: []Vec3,
+	uvs: []Vec2,
+	indices: []i32,
 
-	vao: u32;
-	vbos: [3]u32;
-	ebo: u32;
+	vao: u32,
+	vbos: [3]u32,
+	ebo: u32,
 }
 
 strip_leading_whitespace :: proc(data: string) -> (rest: string) {
 	for b, i in data {
-		match b {
+		switch b {
 		case: return rest = data[i..];
 		case ' ', '\t', '\n', '\v', '\f', '\r':
 		}
@@ -34,7 +33,7 @@ strip_leading_whitespace :: proc(data: string) -> (rest: string) {
 
 get_next_line :: proc(data: string) -> (line, rest: string) {
 	for b, i in data {
-		match b {
+		switch b {
 		case '\n','\r':
 			return line = data[..i], rest = strip_leading_whitespace(data[i..]);
 		}
@@ -61,7 +60,7 @@ split_line_into_words :: proc(data: string, delims: []rune = nil) -> []string {
 				}
 			}
 			// default, if delims == nil
-			match c {
+			switch c {
 			case ' ', '\t', '\n':
 				append(&words, data[0..i]);
 				data = data[i..];
@@ -94,7 +93,7 @@ read_obj :: proc(filename: string) -> (Model, bool) {
 		words := split_line_into_words(line, []rune{' ', '/'});
 		defer free(words);
 		
-		match words[0] {
+		switch words[0] {
 		case "v":
 			assert(len(words) == 4, "Error, expected 3 elements");
 			append(&positions, Vec3{f32_from_string(words[1]), f32_from_string(words[2]), f32_from_string(words[3])});

@@ -23,26 +23,24 @@
 //  
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-import (
-   "strings.odin";
-   "math.odin";
-   "fmt.odin";
-   "os.odin";
+import "core:strings.odin"
+import "core:math.odin"
+import "core:fmt.odin"
+import "core:os.odin"
 
-   "external/odin-glfw/glfw.odin";
-   "external/odin-gl/gl.odin";
-   "external/odin-fbx/fbx.odin";
+import "shared:odin-glfw/glfw.odin"
+import "shared:odin-gl/gl.odin"
+import "shared:odin-fbx/fbx.odin"
 
-   "rift.odin";
-   "utils.odin";
-)
+import "rift.odin"
+import "utils.odin"
 
 vec2 :: struct {
-    x, y: f32;
+    x, y: f32,
 };
 
 vec3 :: struct {
-    x, y, z: f32;
+    x, y, z: f32,
 };
 
 qmul :: proc(q1, q2: rift.ovrQuatf) -> rift.ovrQuatf {
@@ -87,23 +85,23 @@ draw_model2 :: proc(program: u32, vao: u32, texture: u32, num_elements: u32, d, 
 }
 
 Vec3 :: struct #ordered {
-    x, y, z: f32;
+    x, y, z: f32,
 };
 
 Vertex :: struct #ordered {
-    position, normal: Vec3;
+    position, normal: Vec3,
 };
 
 Model :: struct {
-    vertices: []Vertex;
+    vertices: []Vertex,
     
-    num_vertices: int;
-    num_triangles: int;
+    num_vertices: int,
+    num_triangles: int,
 
-    bbox: [6]f32 = [6]f32{1.0e9, -1.0e9, 1.0e9, -1.0e9, 1.09e9, -1.0e9};
+    bbox: [6]f32 = [6]f32{1.0e9, -1.0e9, 1.0e9, -1.0e9, 1.09e9, -1.0e9},
 
-    vao: u32;
-    vbo: u32;
+    vao: u32,
+    vbo: u32,
 };
 
 model_init_and_upload :: proc(using model: ^Model) {
@@ -294,7 +292,7 @@ main :: proc() {
     //
     // @Note: An alternative to this is to do a separate monoscopic rendering pass that is displayed in the main window
     mirror_texture_ovr: ovrMirrorTexture;
-    mirror_desc := ovrMirrorTextureDesc{ovrTextureFormat.OVR_FORMAT_R8G8B8A8_UNORM_SRGB, resx, resy, u32(ovrTextureMiscFlags.ovrTextureMisc_None)};
+    mirror_desc := ovrMirrorTextureDesc{ovrTextureFormat.OVR_FORMAT_R8G8B8A8_UNORM_SRGB, resx, resy, u32(ovrTextureMiscFlags.ovrTextureMisc_None), 0};
 
     if (!OVR_SUCCESS(ovr_CreateMirrorTextureGL(session, &mirror_desc, &mirror_texture_ovr))) { 
         print_last_rift_error();
@@ -401,7 +399,7 @@ main :: proc() {
         ovr_GetRenderDesc(session, ovrEyeType.ovrEye_Left, hmd_desc.MaxEyeFov[0]), 
         ovr_GetRenderDesc(session, ovrEyeType.ovrEye_Right, hmd_desc.MaxEyeFov[1])
     };
-    hmd_to_eye_offset: [2]ovrVector3f = [2]ovrVector3f{ eye_render_desc[0].HmdToEyeOffset, eye_render_desc[1].HmdToEyeOffset };
+    hmd_to_eye_pose: [2]ovrPosef = [2]ovrPosef{ eye_render_desc[0].HmdToEyePose, eye_render_desc[1].HmdToEyePose };
     fmt.fprintln(os.stderr, "Set up default layer, render descriptions and offsets to each eye.");
 
 
@@ -608,6 +606,15 @@ main :: proc() {
     gl.Enable(gl.FRAMEBUFFER_SRGB);
     gl.ClearColor(0.2, 0.3, 0.4, 1.0); 
 
+
+
+    uniforms := gl.get_uniforms_from_program(program);
+    defer for uniform, name in uniforms do free(uniform.name);
+
+    for uniform, name in uniforms {
+        fmt.println(name, uniform);
+    }
+    
     frame_index: i64 = 0;
     for glfw.WindowShouldClose(window) == 0 {
         glfw.PollEvents();
@@ -617,7 +624,7 @@ main :: proc() {
         // See: https://developer.oculus.com/documentation/pcsdk/latest/concepts/dg-sensor/#dg-sensor-head-tracking
 
         // Get the predicted head pose for the current frame
-        ovr_GetEyePoses(session, frame_index, ovrTrue, &hmd_to_eye_offset[0], &layer.RenderPose[0], &layer.SensorSampleTime);
+        ovr_GetEyePoses(session, frame_index, ovrTrue, &hmd_to_eye_pose[0], &layer.RenderPose[0], &layer.SensorSampleTime);
 
         // Get controller tracking state (i.e. position and orientation)
         ts := ovr_GetTrackingState(session, 0, 1);
@@ -841,7 +848,6 @@ main :: proc() {
                 p := ovrVector3f{p1.x + (p2.x-p1.x)*is.HandTrigger[1], p1.y + (p2.y-p1.y)*is.HandTrigger[1],p1.z + (p2.z-p1.z)*is.HandTrigger[1]};
 
                 gl.Uniform3f(get_uniform_location(program, "d_pivot\x00"), p.x, p.y, p.z);
-                // gl.Uniform3f(get_uniform_location(program, "d_model\x00"), 0.9*(p.x-p1.x), 0.9*(p.y-p1.y), 0.9*(p.z-p1.z)); // doesn't look good enough
                 gl.Uniform3f(get_uniform_location(program, "d_model\x00"), -0.0045*is.HandTrigger[1], -0.0005*is.HandTrigger[1], 0.0015*is.HandTrigger[1]);
                 gl.Uniform4f(get_uniform_location(program, "q_pivot\x00"), qq.x, qq.y, qq.z, qq.w);
 
