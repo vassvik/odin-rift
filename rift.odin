@@ -196,7 +196,7 @@ ovrRecti :: struct #ordered #align 4 {
 };
 
 ovrQuatf :: struct #ordered #align 4 {
-    x, y, z, w: f32,
+    x, y, z, w: f32, 
 };
 
 ovrVector2f :: struct #ordered #align 4 {
@@ -1012,13 +1012,13 @@ foreign ovr {
 
     ovrMatrix4f_OrthoSubProjection :: proc(projection: ovrMatrix4f, orthoScale: ovrVector2f, orthoDistance: f32, HmdToEyeOffsetX: f32) -> ovrMatrix4f ---;
 
-    ovr_CalcEyePoses_ :: proc(headPose: ovrPosef, hmdToEyeOffset: ^ovrVector3f, outEyePoses: ^ovrPosef) ---;  // THESE ARE DEPRECATED IN FAVOUR OF USING POSE INSTEAD OF VECTOR?
+    //ovr_CalcEyePoses_old :: proc(headPose: ovrPosef, hmdToEyeOffset: ^ovrVector3f, outEyePoses: ^ovrPosef) ---;  // THESE ARE DEPRECATED IN FAVOUR OF USING POSE INSTEAD OF VECTOR
 
-    ovr_CalcEyePoses :: proc(headPose: ovrPosef,  HmdToEyePose: ^ovrPosef, outEyePoses: [2]ovrPosef) ---;
+    ovr_CalcEyePoses :: proc(headPose: ovrPosef,  HmdToEyePose: ^ovrPosef, outEyePoses: ^ovrPosef) #link_name "ovr_CalcEyePoses2" ---; // NOTE: ovr_CalcEyePoses still correspond to the old version
 
-    ovr_GetEyePoses_ :: proc(session: ovrSession, frameIndex: i64, latencyMarker: ovrBool, hmdToEyeOffset: ^ovrVector3f, outEyePoses: ^ovrPosef, outSensorSampleTime: ^f64) ---; // THESE ARE DEPRECATED IN FAVOUR OF USING POSE INSTEAD OF VECTOR?
+    //ovr_GetEyePoses_old :: proc(session: ovrSession, frameIndex: i64, latencyMarker: ovrBool, hmdToEyeOffset: ^ovrVector3f, outEyePoses: ^ovrPosef, outSensorSampleTime: ^f64) ---; // THESE ARE DEPRECATED IN FAVOUR OF USING POSE INSTEAD OF VECTOR
     
-    ovr_GetEyePoses :: proc(session: ovrSession, frameIndex: i64, latencyMarker: ovrBool, hmdToEyeOffset: ^ovrPosef, outEyePoses: ^ovrPosef, outSensorSampleTime: ^f64) ---;
+    ovr_GetEyePoses :: proc(session: ovrSession, frameIndex: i64, latencyMarker: ovrBool, hmdToEyeOffset: ^ovrPosef, outEyePoses: ^ovrPosef, outSensorSampleTime: ^f64) #link_name "ovr_GetEyePoses2" ---; // NOTE: ovr_CalcEyePoses still correspond to the old version
 
     ovrPosef_FlipHandedness :: proc(inPose: ^ovrPosef, outPose: ^ovrPosef) ---;
 

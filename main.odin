@@ -158,7 +158,10 @@ main :: proc() {
     defer glfw.Terminate();
     fmt.fprintln(os.stderr, "Succeeded initializing GLFW");
 
-    glfw.WindowHint(glfw.SAMPLES, 4);    // samples, for antialiasing
+    //glfw.WindowHint(glfw.SAMPLES, 4);
+    glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 4);
+    glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 5);
+    glfw.WindowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE);
 
     title := "Rift minimal example (Odin)\x00";
     resx, resy : i32 = 1600, 900;
@@ -195,8 +198,7 @@ main :: proc() {
             bbox[4] = min(bbox[4], f32(z));
             bbox[5] = max(bbox[5], f32(z));
 
-            vertices[j] = Vertex{Vec3{f32(x),  f32(y),  f32(z)},
-                                 Vec3{f32(nx), f32(ny), f32(nz)}};
+            vertices[j] = Vertex{Vec3{f32(x),  f32(y),  f32(z)}, Vec3{f32(nx), f32(ny), f32(nz)}};
         }
 
         fmt.println(bbox);
@@ -211,9 +213,14 @@ main :: proc() {
     }
 
     fbx_right := fbx.load_fbx("models/rightController.FBX");
+    fbx_left := fbx.load_fbx("models/leftController.FBX");
     model := fbx.create_model_from_fbx(&fbx_right);
+    model2 := fbx.create_model_from_fbx(&fbx_left);
 
     models := make([]Model, len(model.parts));
+    models2 := make([]Model, len(model2.parts));
+
+
 
     /*
     rightController::Model
@@ -225,9 +232,12 @@ main :: proc() {
     trigger::Model
     */
     for _, i in model.parts {
-        fmt.println("asdasd");
         models[i] = load_part(&model.parts[i]);
         fmt.printf("%.6f %.6f %.6f\n", model.parts[i].local_translation[0], model.parts[i].local_translation[1],model.parts[i].local_translation[2]);
+    }
+    for _, i in model2.parts {
+        models2[i] = load_part(&model2.parts[i]);
+        fmt.printf("%.6f %.6f %.6f\n", model2.parts[i].local_translation[0], model2.parts[i].local_translation[1],model2.parts[i].local_translation[2]);
     }
 
     //-------------------------------------------------------------------------------------------//
@@ -395,11 +405,11 @@ main :: proc() {
     // Used to get the current Eye poses in the render loop, as long as the Fov stays unchanged.
     // The eye offsets are used to construct view matrices for each eye.
     // See: https://developer.oculus.com/documentation/pcsdk/latest/concepts/dg-render/#dg-render-frame
-    eye_render_desc: [2]ovrEyeRenderDesc = [2]ovrEyeRenderDesc{
+    eye_render_desc := [2]ovrEyeRenderDesc{
         ovr_GetRenderDesc(session, ovrEyeType.ovrEye_Left, hmd_desc.MaxEyeFov[0]), 
         ovr_GetRenderDesc(session, ovrEyeType.ovrEye_Right, hmd_desc.MaxEyeFov[1])
     };
-    hmd_to_eye_pose: [2]ovrPosef = [2]ovrPosef{ eye_render_desc[0].HmdToEyePose, eye_render_desc[1].HmdToEyePose };
+    hmd_to_eye_pose := [2]ovrPosef{ eye_render_desc[0].HmdToEyePose, eye_render_desc[1].HmdToEyePose };
     fmt.fprintln(os.stderr, "Set up default layer, render descriptions and offsets to each eye.");
 
 
@@ -606,7 +616,7 @@ main :: proc() {
     gl.Enable(gl.FRAMEBUFFER_SRGB);
     gl.ClearColor(0.2, 0.3, 0.4, 1.0); 
 
-
+    fmt.println("num models:", len(models));
 
     uniforms := gl.get_uniforms_from_program(program);
     defer for uniform, name in uniforms do free(uniform.name);
@@ -614,7 +624,10 @@ main :: proc() {
     for uniform, name in uniforms {
         fmt.println(name, uniform);
     }
-    
+        
+    hmd_to_eye_pose[0].Position.x = -0.001;
+    hmd_to_eye_pose[1].Position.x = 0.001;
+
     frame_index: i64 = 0;
     for glfw.WindowShouldClose(window) == 0 {
         glfw.PollEvents();
@@ -635,13 +648,12 @@ main :: proc() {
         p_left := ts.HandPoses[0].ThePose.Position;
         p_right := ts.HandPoses[1].ThePose.Position;
 
-        q_reorient := ovrQuatf{0.0, math.sin(math.to_radians(180.0/2)), 0.0, math.cos(math.to_radians(180.0/2))};
-        q_left := qmul(ts.HandPoses[0].ThePose.Orientation, q_reorient);
         
         // @NOTE: add pre-orientation to model quaternion, swaps y and z components of offsets and negates the new y component.
         q_reorient1 := ovrQuatf{0.0, math.sin(math.to_radians(180.0/2)), 0.0, math.cos(math.to_radians(180.0/2))};
         q_reorient2 := ovrQuatf{math.sin(math.to_radians(-90.0/2)), 0.0, 0.0, math.cos(math.to_radians(-90.0/2))};
-        q_reorient = qmul(q_reorient1, q_reorient2);
+        q_reorient := qmul(q_reorient1, q_reorient2);
+        q_left := qmul(ts.HandPoses[0].ThePose.Orientation, q_reorient);
         q_right := qmul(ts.HandPoses[1].ThePose.Orientation, q_reorient);
 
         AA : i32 = 2;
@@ -660,6 +672,7 @@ main :: proc() {
 
         // We need to render the scene twice, once for each eye.
         for eye in 0...1 {
+
             // Grab the current available color buffer texture from the texture swap chain.
             current_index: i32;
             ovr_GetTextureSwapChainCurrentIndex(session, texture_swap_chains[eye], &current_index);
@@ -682,31 +695,21 @@ main :: proc() {
 
             // Upload headset position and orientation as uniforms. 
             // The camera is rotated and translated according to these in the shader
-            p_hmd := layer.RenderPose[eye].Position;
-            q_hmd := layer.RenderPose[eye].Orientation;
+            p_hmd := layer.RenderPose[1-eye].Position;
+            q_hmd := layer.RenderPose[1-eye].Orientation;
             gl.Uniform3fv(get_uniform_location(program, "p_hmd\x00"), 1, &p_hmd.x);
             gl.Uniform4fv(get_uniform_location(program, "q_hmd\x00"), 1, &q_hmd.x);
+
+            d := f32(40.0);
+            light_positions := [...]f32 { -d,  d, d,   d,  d, d,   -d, -d, d,   d, -d, d };
+
+            l := f32(300.0);
+            light_colors := [...]f32 { l, l, l,  l, l, l,  l, l, l,  l, l, l };
 
             gl.Uniform3f(get_uniform_location(program, "albedo"), 0.0, 0.0, 0.0);
             gl.Uniform1f(get_uniform_location(program, "metallic"), 0.3);
             gl.Uniform1f(get_uniform_location(program, "roughness"), 0.5);
             gl.Uniform1f(get_uniform_location(program, "ao"), 1.0);
-
-            d :f32 = 40.0;
-            light_positions := [...]f32 {
-                -d,  d, d,
-                 d,  d, d,
-                -d, -d, d,
-                 d, -d, d,
-            };
-
-            l :f32= 300.0;
-            light_colors := [...]f32 {
-                l, l, l,
-                l, l, l,
-                l, l, l,
-                l, l, l
-            };
             gl.Uniform3fv(get_uniform_location(program, "lightPositions\x00"), 4, &light_positions[0]);
             gl.Uniform3fv(get_uniform_location(program, "lightColors\x00"), 4, &light_colors[0]);
 
@@ -725,10 +728,12 @@ main :: proc() {
                        ovrVector3f{0.0, 0.0, 0.0}, ovrQuatf{0.0, 0.0, 0.0, 1.0});
 
             // Left controller
+            /*
             draw_model2(program, model_left.vao, 
                        1, cast(u32)len(model_left.indices), 
                        ovrVector3f{0, 0 ,0}, 
                        p_left, q_left);
+            */
 
             draw_coordinates_at :: proc(vao_coordinates, program: u32, p, d: ovrVector3f, q: ovrQuatf, c: ovrVector3f, o, n: int) {
                 gl.UseProgram(program);
@@ -741,7 +746,6 @@ main :: proc() {
                 gl.Uniform3f(get_uniform_location(program, "p_model\x00"), p.x, p.y, p.z);
                 gl.Uniform4f(get_uniform_location(program, "q_model\x00"), q.x, q.y, q.z, q.w);
 
-                //gl.DrawArrays(gl.LINES, i32(o), i32(n));
                 gl.DrawArraysInstanced(gl.TRIANGLE_STRIP, 0, 18, 3);
 
             }
@@ -757,134 +761,158 @@ main :: proc() {
                 gl.Uniform4f(get_uniform_location(program, "q_model\x00"), q.x, q.y, q.z, q.w);
                 gl.Uniform4f(get_uniform_location(program, "q_pre\x00"), q2.x, q2.y, q2.z, q2.w);
 
-                //gl.DrawArrays(gl.LINES, i32(o), i32(n));
                 gl.DrawArraysInstanced(gl.TRIANGLE_STRIP, 0, 18, 3);
 
             }
             draw_coordinates_at(vao_coordinates, program, p_right, ovrVector3f{0.0, 0.0, 0.0}, q_right, ovrVector3f{0.0, 0.0, 0.0}, 0, 6);
-            //draw_coordinates_at(vao_coordinates, program, p_right, ovrVector3f{f32(model.parts[4].local_translation[0]), f32(-model.parts[4].local_translation[2]), f32(model.parts[4].local_translation[1])}, q_right, ovrVector3f{0.0, 1.0, 0.0}, 0, 6);
-            //draw_coordinates_at(vao_coordinates, program, p_right, ovrVector3f{-0.01063739, -0.004980708, -0.00941856}, q_right, ovrVector3f{0.0, 1.0, 0.0}, 0, 6);
             
             gl.UseProgram(program);
-            gl.Uniform3f(get_uniform_location(program, "d_pivot\x00"), 0.0, 0.0, 0.0);
-            gl.Uniform3f(get_uniform_location(program, "p_model\x00"), p_right.x, p_right.y, p_right.z);
-            gl.Uniform4f(get_uniform_location(program, "q_model\x00"), q_right.x, q_right.y, q_right.z, q_right.w);
-            gl.Uniform4f(get_uniform_location(program, "q_pivot\x00"), 0.0, 0.0, 0.0, 1.0);
-
             gl.Uniform1i(get_uniform_location(program, "apply_texture\x00"), 1);
+
+            draw_controller_part :: proc(program: u32, vao: u32, num_vertices: i32, d_pivot, d_model, p_model: ovrVector3f, q_pivot, q_model: ovrQuatf) {
+                gl.Uniform3fv(get_uniform_location(program, "d_pivot\x00"), 1, &d_pivot.x);
+                gl.Uniform4fv(get_uniform_location(program, "q_pivot\x00"), 1, &q_pivot.x);
+
+                gl.Uniform3fv(get_uniform_location(program, "p_model\x00"), 1, &p_model.x);
+                gl.Uniform4fv(get_uniform_location(program, "q_model\x00"), 1, &q_model.x);
+                gl.Uniform3fv(get_uniform_location(program, "d_model\x00"), 1, &d_model.x);
+
+                gl.BindVertexArray(vao);
+                gl.DrawArrays(gl.TRIANGLES, 0, num_vertices);  
+            }
 
             {
                 // Menu
-                gl.Uniform3f(get_uniform_location(program, "d_model\x00"), 0.0, 0.0, 0.0);
-
-                gl.BindVertexArray(models[1].vao);
-                gl.DrawArrays(gl.TRIANGLES, 0, i32(cast(u32)models[1].num_vertices));  
+                draw_controller_part(program, models[1].vao, cast(i32)models[1].num_vertices, ovrVector3f{}, ovrVector3f{}, p_right, ovrQuatf{}, q_right);
+                draw_controller_part(program, models2[2].vao, cast(i32)models2[2].num_vertices, ovrVector3f{}, ovrVector3f{}, p_left, ovrQuatf{}, q_left);
             }
 
             {
                 // B
-                p1 := ovrVector3f{0.009135387, -0.000116555, 0.005499177};
-                p2 := ovrVector3f{0.008937141, -0.001804241, 0.005691095};
+                dp := ovrVector3f{0.008937141 - (0.009135387), 0.005691095 - (0.005499177), -0.001804241 - (-0.000116555)};
                 
-                if is.Buttons&1 == 0 {
-                    gl.Uniform3f(get_uniform_location(program, "d_model\x00"), 0.0, 0.0, 0.0);
-                } else {
-                    gl.Uniform3f(get_uniform_location(program, "d_model\x00"), p2.x-p1.x, p2.z-p1.z, p2.y-p1.y);
-                }
-
-                gl.BindVertexArray(models[2].vao);
-                gl.DrawArrays(gl.TRIANGLES, 0, i32(cast(u32)models[2].num_vertices));  
+                draw_controller_part(program, models[2].vao, cast(i32)models[2].num_vertices, ovrVector3f{}, is.Buttons&0x00000001 == 0 ? ovrVector3f{} : dp, p_right, ovrQuatf{}, q_right);
+                draw_controller_part(program, models2[3].vao, cast(i32)models2[3].num_vertices, ovrVector3f{}, is.Buttons&0x00000100 == 0 ? ovrVector3f{} : dp, p_left, ovrQuatf{}, q_left);
             }
 
             {
                 // A
-                p1 := ovrVector3f{0.00191709, -0.0009119599, -0.007383698};
-                p2 := ovrVector3f{0.001718102, -0.002603772, -0.007191364};
+                dp := ovrVector3f{0.001718102 - (0.00191709), -0.007191364 - (-0.007383698), -0.002603772 - (-0.0009119599)};
 
-                if is.Buttons&2 == 0 {
-                    gl.Uniform3f(get_uniform_location(program, "d_model\x00"), 0.0, 0.0, -0.0);
-                } else {
-                    gl.Uniform3f(get_uniform_location(program, "d_model\x00"), p2.x-p1.x, p2.z-p1.z, p2.y-p1.y);
-                }
-
-                gl.BindVertexArray(models[3].vao);
-                gl.DrawArrays(gl.TRIANGLES, 0, i32(cast(u32)models[3].num_vertices));  
+                draw_controller_part(program, models[3].vao, cast(i32)models[3].num_vertices, ovrVector3f{}, is.Buttons&0x00000002 == 0 ? ovrVector3f{} : dp, p_right, ovrQuatf{}, q_right);
+                draw_controller_part(program, models2[4].vao, cast(i32)models2[4].num_vertices, ovrVector3f{}, is.Buttons&0x00000200 == 0 ? ovrVector3f{} : dp, p_left, ovrQuatf{}, q_left);
             }
 
-
-            gl.Uniform3f(get_uniform_location(program, "d_model\x00"), 0.0, 0.0, 0.0);
             
             {
                 // stick
-                dx := is.Thumbstick[1].x;
-                dy := is.Thumbstick[1].y;
-                dr := math.sqrt(dx*dx + dy*dy + 1.0e-9);
+                {
+                    dx := is.Thumbstick[1].x;
+                    dy := is.Thumbstick[1].y;
+                    dr := math.sqrt(dx*dx + dy*dy + 1.0e-9);
 
-                a := 15.0*math.PI/180.0 * (dr/1.0);
-                q := ovrQuatf{dy/dr*math.sin(a/2), -dx/dr*math.sin(a/2), 0.0*math.sin(a/2), math.cos(a/2)};
+                    a := 15.0*math.PI/180.0 * (dr/1.0);
+                    q := ovrQuatf{dy/dr*math.sin(a/2), -dx/dr*math.sin(a/2), 0.0*math.sin(a/2), math.cos(a/2)};
+                    d := ovrVector3f{-0.01063739, -0.004980708, -0.00941856};
 
-                gl.Uniform3f(get_uniform_location(program, "d_pivot\x00"), -0.01063739, -0.004980708, -0.00941856);
-                gl.Uniform4f(get_uniform_location(program, "q_pivot\x00"), q.x, q.y, q.z, q.w);
+                    draw_controller_part(program, models[4].vao, cast(i32)models[4].num_vertices, d, ovrVector3f{}, p_right, q, q_right);
+                }
+                {
+                    dx := is.Thumbstick[0].x;
+                    dy := is.Thumbstick[0].y;
+                    dr := math.sqrt(dx*dx + dy*dy + 1.0e-9);
 
-                gl.BindVertexArray(models[4].vao);
-                gl.DrawArrays(gl.TRIANGLES, 0, i32(cast(u32)models[4].num_vertices));  
+                    a := 15.0*math.PI/180.0 * (dr/1.0);
+                    q := ovrQuatf{dy/dr*math.sin(a/2), -dx/dr*math.sin(a/2), 0.0*math.sin(a/2), math.cos(a/2)};
+                    d := ovrVector3f{0.01063739, -0.004980708, -0.00941856};
+                    draw_controller_part(program, models2[1].vao, cast(i32)models2[1].num_vertices, d, ovrVector3f{}, p_left, q, q_left);
+                }
             }
 
             {
                 // Grip
 
-                // Extract pivot axis from UP quaternion
-                x, y, z, w : f32= 0.04835906, 0.5594535, 0.8149385, 0.1433468; 
-                sinangle := math.sqrt(1.0 - w*w);
-                ax, ay, az := x/sinangle, y/sinangle, z/sinangle;
+                {       
+                    // Extract pivot axis from UP quaternion
+                    x, y, z, w : f32= 0.04835906, 0.5594535, 0.8149385, 0.1433468; 
+                    sinangle := math.sqrt(1.0 - w*w);
+                    ax, ay, az := x/sinangle, y/sinangle, z/sinangle;
 
-                // interpolate angle between 0 and the difference in angle between the UP and DOWN quaternions
-                aa := is.HandTrigger[1]*0.0156846; // 2*0.0156846 == 2*arccos(0.1278072) - 2*arccos(0.1433468)
-                qq := ovrQuatf{ax*math.sin(aa), ay*math.sin(aa), az*math.sin(aa), math.cos(aa)}; // factor 1/2 cancels
+                    // interpolate angle between 0 and the difference in angle between the UP and DOWN quaternions
+                    aa := is.HandTrigger[1]*0.0156846; // 2*0.0156846 == 2*arccos(0.1278072) - 2*arccos(0.1433468)
+                    qq := ovrQuatf{ax*math.sin(aa), ay*math.sin(aa), az*math.sin(aa), math.cos(aa)}; // factor 1/2 cancels
 
-                // Interpolate position 
-                p1 := ovrVector3f{-0.01307428, 0.02563973, -0.02742721}; // Up position, y and z swapped due to 90 degree rotation, new y negated
-                p2 := ovrVector3f{-0.01826144, 0.02345688, -0.02513915}; // Down position, y and z swapped due to 90 degree rotation, new y negated
-                p := ovrVector3f{p1.x + (p2.x-p1.x)*is.HandTrigger[1], p1.y + (p2.y-p1.y)*is.HandTrigger[1],p1.z + (p2.z-p1.z)*is.HandTrigger[1]};
+                    // Interpolate position 
+                    p1 := ovrVector3f{-0.01307428, 0.02563973, -0.02742721}; // Up position, y and z swapped due to 90 degree rotation, new y negated
+                    p2 := ovrVector3f{-0.01826144, 0.02345688, -0.02513915}; // Down position, y and z swapped due to 90 degree rotation, new y negated
+                    p := ovrVector3f{p1.x + (p2.x-p1.x)*is.HandTrigger[1], p1.y + (p2.y-p1.y)*is.HandTrigger[1],p1.z + (p2.z-p1.z)*is.HandTrigger[1]};
 
-                gl.Uniform3f(get_uniform_location(program, "d_pivot\x00"), p.x, p.y, p.z);
-                gl.Uniform3f(get_uniform_location(program, "d_model\x00"), -0.0045*is.HandTrigger[1], -0.0005*is.HandTrigger[1], 0.0015*is.HandTrigger[1]);
-                gl.Uniform4f(get_uniform_location(program, "q_pivot\x00"), qq.x, qq.y, qq.z, qq.w);
+                    d := ovrVector3f{-0.0045*is.HandTrigger[1], -0.0005*is.HandTrigger[1], 0.0015*is.HandTrigger[1]}; 
 
-                gl.BindVertexArray(models[5].vao);
-                gl.DrawArrays(gl.TRIANGLES, 0, i32(cast(u32)models[5].num_vertices));     
+                    draw_controller_part(program, models[5].vao, cast(i32)models[5].num_vertices, p, d, p_right, qq, q_right);
+                }
+                {       
+                    // Extract pivot axis from UP quaternion
+                    x, y, z, w : f32= 0.04835906, 0.5594535, 0.8149385, 0.1433468; 
+                    sinangle := math.sqrt(1.0 - w*w);
+                    ax, ay, az := x/sinangle, y/sinangle, z/sinangle;
+
+                    // interpolate angle between 0 and the difference in angle between the UP and DOWN quaternions
+                    aa := -is.HandTrigger[0]*0.0156846; // 2*0.0156846 == 2*arccos(0.1278072) - 2*arccos(0.1433468)
+                    qq := ovrQuatf{ax*math.sin(aa), ay*math.sin(aa), az*math.sin(aa), math.cos(aa)}; // factor 1/2 cancels
+
+                    // Interpolate position 
+                    p1 := ovrVector3f{0.01307428, 0.02563973, -0.02742721}; // Up position, y and z swapped due to 90 degree rotation, new y negated
+                    p2 := ovrVector3f{0.01826144, 0.02345688, -0.02513915}; // Down position, y and z swapped due to 90 degree rotation, new y negated
+                    p := ovrVector3f{p1.x + (p2.x-p1.x)*is.HandTrigger[1], p1.y + (p2.y-p1.y)*is.HandTrigger[1],p1.z + (p2.z-p1.z)*is.HandTrigger[1]};
+
+                    d := ovrVector3f{0.0045*is.HandTrigger[0], -0.0005*is.HandTrigger[0], 0.0015*is.HandTrigger[0]}; 
+
+                    draw_controller_part(program, models2[5].vao, cast(i32)models2[5].num_vertices, p, d, p_left, qq, q_left);
+                }
             }
 
             {
-                // Trigger
-                x, y, z, w : f32= -0.6180527, 0.02941076, -0.05015482, 0.7839837;
-        
-                cosangle := w;
-                sinangle := math.sqrt(1.0 - cosangle*cosangle);
+                {
+                    // Trigger
+                    x, y, z, w : f32= -0.6180527, 0.02941076, -0.05015482, 0.7839837;
+            
+                    cosangle := w;
+                    sinangle := math.sqrt(1.0 - cosangle*cosangle);
 
-                aa := -is.IndexTrigger[1]*0.173899;
-                ax, ay, az := x/sinangle, y/sinangle, z/sinangle;
+                    aa := -is.IndexTrigger[1]*0.173899;
+                    ax, ay, az := x/sinangle, y/sinangle, z/sinangle;
 
-                qq := ovrQuatf{ax*math.sin(aa), ay*math.sin(aa), az*math.sin(aa), math.cos(aa)};
-                gl.Uniform3f(get_uniform_location(program, "d_model\x00"), 0.0, 0.0, 0.0);
-                gl.Uniform3f(get_uniform_location(program, "d_pivot\x00"), 0.001420307, -0.02186586, -0.005496453);
-                gl.Uniform4f(get_uniform_location(program, "q_pivot\x00"), qq.x, qq.y, qq.z, qq.w);
+                    hmd_to_eye_pose[0].Position.x *= math.pow(0.9, aa);
+                    hmd_to_eye_pose[1].Position.x *= math.pow(0.9, aa);
 
-                gl.BindVertexArray(models[6].vao);
-                gl.DrawArrays(gl.TRIANGLES, 0, i32(cast(u32)models[6].num_vertices));           
+                    qq := ovrQuatf{ax*math.sin(aa), ay*math.sin(aa), az*math.sin(aa), math.cos(aa)};
+                    p := ovrVector3f{0.001420307, -0.02186586, -0.005496453};
+
+                    draw_controller_part(program, models[6].vao, cast(i32)models[6].num_vertices, p, ovrVector3f{}, p_right, qq, q_right);
+                }
+                {
+                    // Trigger
+                    x, y, z, w : f32= -0.6180527, 0.02941076, -0.05015482, 0.7839837;
+            
+                    cosangle := w; 
+                    sinangle := math.sqrt(1.0 - cosangle*cosangle);
+
+                    aa := -is.IndexTrigger[0]*0.173899;
+                    ax, ay, az := x/sinangle, y/sinangle, z/sinangle;
+
+                    hmd_to_eye_pose[0].Position.x *= math.pow(1.0/0.9, aa);
+                    hmd_to_eye_pose[1].Position.x *= math.pow(1.0/0.9, aa);
+
+                    qq := ovrQuatf{ax*math.sin(aa), ay*math.sin(aa), az*math.sin(aa), math.cos(aa)};
+                    p := ovrVector3f{0.001420307, -0.02186586, -0.005496453};
+
+                    draw_controller_part(program, models2[6].vao, cast(i32)models2[6].num_vertices, p, ovrVector3f{}, p_left, qq, q_left);
+                }
             }
-
-
-            gl.Uniform3f(get_uniform_location(program, "d_pivot\x00"), 0.0, 0.0, 0.0);
-            gl.Uniform4f(get_uniform_location(program, "q_pivot\x00"), 0.0, 0.0, 0.0, 1.0);
-
-            for i in 0..len(models)-1 {
-                if i != 0 || i == 4 || i == 5 do continue;
-                draw_model(program, models[i].vao, 
-                       1, cast(u32)models[i].num_vertices, 
-                       ovrVector3f{0.0, 0.0, 0.0}, 
-                       p_right, q_right);
-            }
+           
+            draw_controller_part(program, models[0].vao, cast(i32)models[0].num_vertices, ovrVector3f{}, ovrVector3f{}, p_right, ovrQuatf{}, q_right);
+            draw_controller_part(program, models2[0].vao, cast(i32)models2[0].num_vertices, ovrVector3f{}, ovrVector3f{}, p_left, ovrQuatf{}, q_left);
             
             // Commit the render
             ovr_CommitTextureSwapChain(session, texture_swap_chains[eye]);

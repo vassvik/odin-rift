@@ -15,7 +15,7 @@ Works for Odin commit "01d8aea4df45255c6187267a58b0f84dacadc768" as of 4th of Oc
 
 
 Currently contains two examples: 
- - `main_minimal.odin` is the *bare minimum*, only drawing a different color for each eye, with no tracking at all. This one's about 250 lines of code. **This example is OUTDATED and DOES NOT RUN AT THIS POINT**. 
+ - `main_minimal.odin` is the *bare minimum*, only drawing a different color for each eye, with no tracking at all. This one's about 250 lines of code. 
  - `main.odin` goes a bit further, drawing a 3D scene with full headset and Touch controller tracking using official model files (with animations). 
  
 Other files are work-in-progress
